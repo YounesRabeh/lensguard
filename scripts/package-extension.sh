@@ -11,7 +11,12 @@ else
 fi
 
 mkdir -p -- "$output_dir"
-gnome-extensions pack --force --quiet --out-dir "$output_dir" "$repo_root/extension"
+gnome-extensions pack \
+    --force \
+    --quiet \
+    --extra-source="$repo_root/extension/icons" \
+    --out-dir "$output_dir" \
+    "$repo_root/extension"
 
 archive=$output_dir/lensguard@younesrabeh.github.io.shell-extension.zip
 if [[ ! -s $archive ]]; then
@@ -20,7 +25,7 @@ if [[ ! -s $archive ]]; then
 fi
 
 archive_entries=$(unzip -Z1 "$archive")
-for required_file in metadata.json extension.js; do
+for required_file in metadata.json extension.js icons/camera-active.png; do
     if ! grep -Fxq "$required_file" <<<"$archive_entries"; then
         printf '%s\n' "extension package is missing $required_file" >&2
         exit 1

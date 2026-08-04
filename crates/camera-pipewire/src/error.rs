@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use camera_core::DomainError;
+
 /// A malformed property or fixture at the raw adapter boundary.
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum MappingError {
@@ -11,6 +13,15 @@ pub enum MappingError {
     MissingFixtureField { line: usize, field: &'static str },
     #[error("fixture line {line} has unsupported object type '{value}'")]
     UnsupportedFixtureObjectType { line: usize, value: String },
+}
+
+/// Failures while converting a raw graph change into domain events.
+#[derive(Clone, Debug, Error, Eq, PartialEq)]
+pub enum CorrelationError {
+    #[error("invalid PipeWire graph metadata: {0}")]
+    Mapping(#[from] MappingError),
+    #[error("could not create an opaque domain identifier: {0}")]
+    Domain(#[from] DomainError),
 }
 
 /// Failures while observing the current user's `PipeWire` instance.
@@ -34,4 +45,12 @@ pub enum PipeWireError {
         result: i32,
         message: String,
     },
+    #[error("failed to start the PipeWire monitor thread: {0}")]
+    MonitorThread(#[source] std::io::Error),
+    #[error("failed to initialize the PipeWire monitor: {details}")]
+    MonitorInitialization { details: String },
+    #[error("PipeWire monitor initialization ended unexpectedly")]
+    InitializationChannelClosed,
+    #[error("PipeWire monitor event channel closed unexpectedly")]
+    EventChannelClosed,
 }

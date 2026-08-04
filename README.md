@@ -6,15 +6,16 @@ GNOME Shell extension over the user D-Bus.
 
 ## Architecture
 
-The project has completed Step 3 registry observation. It can inspect and classify candidate
-camera sources and application video-input streams in the current `PipeWire` graph. It does not
-yet correlate graph links into camera sessions, run a D-Bus service, or display an indicator.
+The project has completed Step 4 graph correlation. It observes and classifies the current
+`PipeWire` graph and emits domain lifecycle events for complete camera-to-application
+relationships. It does not yet resolve application identity, run a D-Bus service, or display an
+indicator.
 
 The repository follows ports and adapters:
 
 - `camera-core` owns pure domain models, idempotent event reduction, ordered snapshots, and port
   traits without desktop dependencies.
-- `camera-pipewire` will adapt PipeWire graph events to the domain boundary.
+- `camera-pipewire` adapts PipeWire graph events to the domain boundary.
 - `camera-app-resolver` will resolve process and desktop application identity.
 - `camera-dbus` will translate internal state into a stable user-session D-Bus API.
 - `camera-monitor` will be the daemon composition root.
@@ -31,6 +32,7 @@ make bootstrap
 make check
 cargo run -p camera-monitor -- --version
 cargo run -p camera-monitor -- inspect-pipewire
+cargo run -p camera-monitor -- watch-pipewire
 ```
 
 See [docs/development.md](docs/development.md) for Fedora setup, recorded local versions, generic
@@ -38,8 +40,9 @@ distribution guidance, and the current manual GNOME lifecycle check. Implementat
 and scope are defined in [Plan.md](Plan.md). Domain invariants and dependency rules are documented
 in [docs/architecture.md](docs/architecture.md).
 
-The inspection command is diagnostic only: it prints a one-time raw graph summary and exits. See
-[tests/manual/pipewire-inspection.md](tests/manual/pipewire-inspection.md) for live-session checks.
+The inspection command prints a one-time raw graph summary. The watcher prints correlated domain
+start, update, and stop events. See
+[tests/manual/camera-session.md](tests/manual/camera-session.md) for live-session checks.
 
 ## License
 

@@ -35,4 +35,19 @@ and ignored rather than inserted as incorrect relationships.
 
 The inspection command only discovers and classifies graph objects. A camera-source candidate may
 exist while no application is capturing, and virtual or screen sources may also advertise a video
-source class. Link correlation and active-session decisions are intentionally deferred to Step 4.
+source class. Use the lifecycle watcher to see only correlated domain events:
+
+```sh
+cargo run -p camera-monitor -- watch-pipewire
+```
+
+An application merely being open should produce no output. Active direct capture produces
+`START`, improved PipeWire metadata may produce `UPDATE`, and ending capture produces `STOP`.
+
+## A camera application produces no lifecycle event
+
+Compare `inspect-pipewire` output with `pw-dump`. Step 4 requires a direct complete link from a
+`Video/Source` output port to a `Stream/Input/Video` input port. Some portals, virtual cameras, and
+session-manager policies insert intermediate processing nodes; those multi-hop layouts are a
+known limitation at this stage. Missing port ownership or direction metadata also keeps a
+relationship unclassified rather than risking a false positive.

@@ -74,10 +74,35 @@ Step 3 classification follows the session-manager media classes:
 - `Stream/Input/Video` is an application video-input candidate;
 - audio classes and video output/playback classes are unrelated.
 
-These are candidates, not camera sessions. The adapter deliberately does not decide whether a
-link is active or correlate a source with an application; that is Step 4 scope. Properties such as
-`device.api`, `media.role`, and `node.virtual` are retained for that later decision.
+These classifications remain candidates until the Step 4 correlation conditions below hold.
 
 `camera-monitor inspect-pipewire` performs two `PipeWire` synchronization barriers, prints a
 deterministically ordered summary, and exits. Core errors are converted into typed errors rather
 than panics. Long-running retry and reconnection policy remains daemon-orchestration scope.
+
+## PipeWire camera relationship correlation
+
+Step 4 converts raw graph changes to `camera-core::MonitorEvent` values. A relationship is active
+only when all of these conditions hold:
+
+1. A complete PipeWire link identifies both endpoint nodes and ports.
+2. The output node has `media.class=Video/Source`.
+3. The input node has `media.class=Stream/Input/Video`.
+4. Both endpoint ports exist, belong to the linked nodes, and have output/input direction
+   respectively.
+
+The adapter deduplicates relationships by camera-node/application-node pair rather than link ID.
+This makes duplicate links and harmless link replacement invisible to the domain. An opaque,
+deterministic hash of that pair becomes the domain session ID; raw PipeWire IDs never cross the
+adapter boundary. The original start timestamp is retained when metadata improves.
+
+Registry callbacks and native objects live on a dedicated PipeWire main-loop thread. The public
+`PipeWireEventSource` implements the synchronous `CameraEventSource` port and passes only domain
+events over a channel. A backend failure first ends known sessions and then emits
+`BackendUnavailable`, avoiding a false claim that the camera is inactive.
+
+Direct links are the supported Step 4 topology. Graphs containing converter or portal nodes
+between the camera and application may require multi-hop correlation later. Candidate source
+classification also cannot distinguish every physical camera from virtual or screen sources.
+Application metadata is copied only from PipeWire in this step; process and desktop-entry
+enrichment belongs to Step 5.

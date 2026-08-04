@@ -418,42 +418,42 @@ Create a buildable repository skeleton with verified local prerequisites, qualit
 
 ### Checklist
 
-- [ ] Detect and document the installed GNOME Shell version.
-- [ ] Detect and document the installed Rust toolchain.
-- [ ] Verify PipeWire, WirePlumber, GJS, D-Bus tools, and systemd user-session availability.
-- [ ] Create the repository structure described above.
-- [ ] Create a Cargo workspace with compiling placeholder library crates.
-- [ ] Add a daemon binary that starts, logs its version, and exits successfully with `--version`.
-- [ ] Add extension metadata using the locally installed GNOME Shell compatibility value.
-- [ ] Add a minimal extension that can be enabled and disabled without adding a panel item.
-- [ ] Add `.editorconfig`, `.gitignore`, formatting configuration, and license.
-- [ ] Add `Makefile` or equivalent task entry points:
-  - [ ] `make format`
-  - [ ] `make lint`
-  - [ ] `make test`
-  - [ ] `make check`
-  - [ ] `make build`
-- [ ] Add `scripts/bootstrap-dev.sh` that checks dependencies without making unsafe system changes.
-- [ ] Add `docs/development.md` with Fedora-focused setup and generic fallback guidance.
-- [ ] Add a root README with project purpose, status, architecture summary, and quick-start placeholders.
+- [x] Detect and document the installed GNOME Shell version.
+- [x] Detect and document the installed Rust toolchain.
+- [x] Verify PipeWire, WirePlumber, GJS, D-Bus tools, and systemd user-session availability.
+- [x] Create the repository structure described above.
+- [x] Create a Cargo workspace with compiling placeholder library crates.
+- [x] Add a daemon binary that starts, logs its version, and exits successfully with `--version`.
+- [x] Add extension metadata using the locally installed GNOME Shell compatibility value.
+- [x] Add a minimal extension that can be enabled and disabled without adding a panel item.
+- [x] Add `.editorconfig`, `.gitignore`, formatting configuration, and license.
+- [x] Add `Makefile` or equivalent task entry points:
+  - [x] `make format`
+  - [x] `make lint`
+  - [x] `make test`
+  - [x] `make check`
+  - [x] `make build`
+- [x] Add `scripts/bootstrap-dev.sh` that checks dependencies without making unsafe system changes.
+- [x] Add `docs/development.md` with Fedora-focused setup and generic fallback guidance.
+- [x] Add a root README with project purpose, status, architecture summary, and quick-start placeholders.
 
 ### Minimum testing requirements
 
 **Unit tests**
 
-- [ ] At least one trivial Rust test per library crate to prove test discovery.
+- [x] At least one trivial Rust test per library crate to prove test discovery.
 
 **Smoke tests**
 
-- [ ] `cargo build --workspace` succeeds.
-- [ ] Daemon `--version` command succeeds.
-- [ ] Extension package contains valid required metadata files.
-- [ ] Extension can be parsed by GJS without syntax errors.
+- [x] `cargo build --workspace` succeeds.
+- [x] Daemon `--version` command succeeds.
+- [x] Extension package contains valid required metadata files.
+- [x] Extension can be parsed by GJS without syntax errors.
 
 **Static checks**
 
-- [ ] `cargo fmt --check` passes.
-- [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings` passes.
+- [x] `cargo fmt --check` passes.
+- [x] `cargo clippy --workspace --all-targets --all-features -- -D warnings` passes.
 
 ### Deliverables
 
@@ -485,40 +485,40 @@ Implement the infrastructure-independent core model that owns camera sessions an
 
 ### Checklist
 
-- [ ] Define `CameraDevice`, `ApplicationIdentity`, `CameraSession`, and typed IDs.
-- [ ] Define `DetectionBackend` with `PipeWire` and future-safe variants.
-- [ ] Define `MonitorEvent`.
-- [ ] Implement `MonitorState` with active-session lookup and ordered snapshots.
-- [ ] Implement event application as a pure operation.
-- [ ] Handle duplicate starts idempotently.
-- [ ] Handle unknown stops safely.
-- [ ] Support metadata enrichment through session updates.
-- [ ] Define a `CameraEventSource` port used by future adapters.
-- [ ] Define a `SessionObserver` or event-sink port if needed by the application layer.
-- [ ] Keep the crate free of async runtime and infrastructure dependencies unless a small abstraction requires otherwise.
-- [ ] Document invariants in Rust documentation comments.
+- [x] Define `CameraDevice`, `ApplicationIdentity`, `CameraSession`, and typed IDs.
+- [x] Define `DetectionBackend` with `PipeWire` and future-safe variants.
+- [x] Define `MonitorEvent`.
+- [x] Implement `MonitorState` with active-session lookup and ordered snapshots.
+- [x] Implement event application as a pure operation.
+- [x] Handle duplicate starts idempotently.
+- [x] Handle unknown stops safely.
+- [x] Support metadata enrichment through session updates.
+- [x] Define a `CameraEventSource` port used by future adapters.
+- [x] Define a `SessionObserver` or event-sink port if needed by the application layer.
+- [x] Keep the crate free of async runtime and infrastructure dependencies unless a small abstraction requires otherwise.
+- [x] Document invariants in Rust documentation comments.
 
 ### Minimum testing requirements
 
 **Unit tests**
 
-- [ ] Start event adds one session.
-- [ ] Duplicate start remains one session.
-- [ ] Stop removes the matching session.
-- [ ] Unknown stop is harmless.
-- [ ] Update enriches metadata without changing session identity.
-- [ ] Multiple simultaneous sessions are supported.
-- [ ] Snapshot ordering is deterministic.
-- [ ] `Active` becomes false only after the final session stops.
+- [x] Start event adds one session.
+- [x] Duplicate start remains one session.
+- [x] Stop removes the matching session.
+- [x] Unknown stop is harmless.
+- [x] Update enriches metadata without changing session identity.
+- [x] Multiple simultaneous sessions are supported.
+- [x] Snapshot ordering is deterministic.
+- [x] `Active` becomes false only after the final session stops.
 
 **Property or table-driven tests**
 
-- [ ] Reapplying an identical event sequence produces the same state.
-- [ ] Applying duplicate starts does not change session count.
+- [x] Reapplying an identical event sequence produces the same state.
+- [x] Applying duplicate starts does not change session count.
 
 **Static checks**
 
-- [ ] No PipeWire, zbus, GNOME, or systemd dependency appears in `camera-core`.
+- [x] No PipeWire, zbus, GNOME, or systemd dependency appears in `camera-core`.
 
 ### Deliverables
 
@@ -547,42 +547,42 @@ Connect to the current user PipeWire instance and observe relevant registry obje
 
 ### Checklist
 
-- [ ] Implement PipeWire initialization and connection.
-- [ ] Observe global object addition and removal.
-- [ ] Capture properties required to classify nodes, ports, devices, and links.
-- [ ] Store raw PipeWire IDs only inside the adapter crate.
-- [ ] Create internal adapter models for nodes, ports, and links.
-- [ ] Detect candidate camera-source nodes.
-- [ ] Detect candidate application video-input stream nodes.
-- [ ] Handle incomplete metadata and late-arriving properties.
-- [ ] Handle PipeWire disconnect without panicking.
-- [ ] Expose adapter events through a testable internal abstraction.
-- [ ] Add debug logging that can print a concise relevant graph summary.
-- [ ] Add a CLI diagnostic mode such as `camera-monitor inspect-pipewire`.
+- [x] Implement PipeWire initialization and connection.
+- [x] Observe global object addition and removal.
+- [x] Capture properties required to classify nodes, ports, devices, and links.
+- [x] Store raw PipeWire IDs only inside the adapter crate.
+- [x] Create internal adapter models for nodes, ports, and links.
+- [x] Detect candidate camera-source nodes.
+- [x] Detect candidate application video-input stream nodes.
+- [x] Handle incomplete metadata and late-arriving properties.
+- [x] Handle PipeWire disconnect without panicking.
+- [x] Expose adapter events through a testable internal abstraction.
+- [x] Add debug logging that can print a concise relevant graph summary.
+- [x] Add a CLI diagnostic mode such as `camera-monitor inspect-pipewire`.
 
 ### Minimum testing requirements
 
 **Unit tests**
 
-- [ ] Node classification from property maps.
-- [ ] Port classification from property maps.
-- [ ] Link parsing from synthetic properties.
-- [ ] Missing or malformed property handling.
-- [ ] Object removal cleans adapter graph state.
+- [x] Node classification from property maps.
+- [x] Port classification from property maps.
+- [x] Link parsing from synthetic properties.
+- [x] Missing or malformed property handling.
+- [x] Object removal cleans adapter graph state.
 
 **Fixture tests**
 
-- [ ] Parse sanitized PipeWire fixture data for at least:
-  - [ ] one physical camera;
-  - [ ] one camera application stream;
-  - [ ] unrelated audio nodes;
-  - [ ] unrelated video-output nodes.
+- [x] Parse sanitized PipeWire fixture data for at least:
+  - [x] one physical camera;
+  - [x] one camera application stream;
+  - [x] unrelated audio nodes;
+  - [x] unrelated video-output nodes.
 
 **Smoke tests**
 
-- [ ] Diagnostic command connects to PipeWire in the current desktop session.
-- [ ] Command exits cleanly when no camera is present.
-- [ ] Command reports a useful error when PipeWire is unavailable.
+- [x] Diagnostic command connects to PipeWire in the current desktop session.
+- [x] Command exits cleanly when no camera is present.
+- [x] Command reports a useful error when PipeWire is unavailable.
 
 ### Deliverables
 
@@ -612,43 +612,43 @@ Convert the observed PipeWire graph into stable start, update, and stop events f
 
 ### Checklist
 
-- [ ] Define the minimum graph conditions that mean a camera is actively consumed.
-- [ ] Correlate camera source nodes, ports, links, and application input streams.
-- [ ] Create stable domain session IDs from adapter-owned relationships.
-- [ ] Emit `SessionStarted` only once per active relationship.
-- [ ] Emit `SessionUpdated` when useful metadata improves.
-- [ ] Emit `SessionStopped` when the active relationship disappears.
-- [ ] Handle object removal in any order.
-- [ ] Support one application using multiple cameras.
-- [ ] Support multiple applications using one camera.
-- [ ] Ignore unrelated video playback and virtual nodes unless they satisfy camera-source criteria.
-- [ ] Avoid false stop/start churn caused by harmless metadata updates.
-- [ ] Document assumptions and known PipeWire limitations.
+- [x] Define the minimum graph conditions that mean a camera is actively consumed.
+- [x] Correlate camera source nodes, ports, links, and application input streams.
+- [x] Create stable domain session IDs from adapter-owned relationships.
+- [x] Emit `SessionStarted` only once per active relationship.
+- [x] Emit `SessionUpdated` when useful metadata improves.
+- [x] Emit `SessionStopped` when the active relationship disappears.
+- [x] Handle object removal in any order.
+- [x] Support one application using multiple cameras.
+- [x] Support multiple applications using one camera.
+- [x] Ignore unrelated video playback and virtual nodes unless they satisfy camera-source criteria.
+- [x] Avoid false stop/start churn caused by harmless metadata updates.
+- [x] Document assumptions and known PipeWire limitations.
 
 ### Minimum testing requirements
 
 **Unit tests**
 
-- [ ] Link creation emits one session start.
-- [ ] Duplicate link information emits no duplicate start.
-- [ ] Link removal emits one stop.
-- [ ] Node removal before link removal still emits one stop.
-- [ ] Late application metadata emits an update.
-- [ ] Audio graph changes emit no camera events.
-- [ ] Video-output/playback streams emit no camera events.
+- [x] Link creation emits one session start.
+- [x] Duplicate link information emits no duplicate start.
+- [x] Link removal emits one stop.
+- [x] Node removal before link removal still emits one stop.
+- [x] Late application metadata emits an update.
+- [x] Audio graph changes emit no camera events.
+- [x] Video-output/playback streams emit no camera events.
 
 **Integration tests with synthetic graph adapter**
 
-- [ ] Single camera and single application lifecycle.
-- [ ] Two applications sharing one camera.
-- [ ] One application switching cameras.
-- [ ] PipeWire backend restart and graph rebuild.
+- [x] Single camera and single application lifecycle.
+- [x] Two applications sharing one camera.
+- [x] One application switching cameras.
+- [x] PipeWire backend restart and graph rebuild.
 
 **Manual smoke test**
 
-- [ ] Start a known camera application and observe a start event.
-- [ ] Stop camera capture and observe a stop event.
-- [ ] Confirm no event when the application is open but not capturing.
+- [x] Start a known camera application and observe a start event.
+- [x] Stop camera capture and observe a stop event.
+- [x] Confirm no event when the application is open but not capturing.
 
 ### Deliverables
 

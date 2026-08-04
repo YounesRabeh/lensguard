@@ -1,7 +1,7 @@
 # Development
 
-LensGuard has completed the Step 3 `PipeWire` registry-observation baseline. Candidate graph
-objects can be inspected, but camera-session correlation, D-Bus, and UI behavior do not exist yet.
+LensGuard has completed the Step 4 `PipeWire` graph-correlation baseline. A live adapter can emit
+domain camera-session events, but application resolution, D-Bus, and UI behavior do not exist yet.
 
 ## Recorded local environment
 
@@ -78,6 +78,7 @@ Both directories are ignored by Git. To inspect the daemon bootstrap executable:
 ```sh
 cargo run -p camera-monitor -- --version
 cargo run -p camera-monitor -- inspect-pipewire
+cargo run -p camera-monitor -- watch-pipewire
 ```
 
 Step 1 intentionally has no live GNOME enable/disable test automation. To verify lifecycle
