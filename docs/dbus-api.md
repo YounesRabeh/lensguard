@@ -75,13 +75,14 @@ methods, invalid arguments, or transport failures.
 
 ## Command-line examples
 
-Start the Step 6 standalone endpoint in one terminal:
+Start the functional daemon in one terminal:
 
 ```sh
-cargo run -p camera-monitor -- serve-dbus
+cargo run -p camera-monitor -- --log-level info run
 ```
 
-This publishes an initially empty state. PipeWire-to-D-Bus orchestration belongs to Step 7.
+With no camera capture, this publishes an empty session list while keeping the PipeWire backend
+under observation. `serve-dbus` remains available when a transport-only empty endpoint is useful.
 
 Inspect and call it with GLib's standard D-Bus tool:
 

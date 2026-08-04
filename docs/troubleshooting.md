@@ -2,7 +2,7 @@
 
 ## D-Bus service is unavailable
 
-Start `cargo run -p camera-monitor -- serve-dbus` from a terminal in the same graphical user
+Start `cargo run -p camera-monitor -- run` from a terminal in the same graphical user
 session as the client. Confirm that `DBUS_SESSION_BUS_ADDRESS` is set, then call the `Ping` example
 in `docs/dbus-api.md`. Sandboxes may expose the address while denying access to its Unix socket;
 use an ordinary user-session terminal or an isolated `dbus-run-session` test in that case.
@@ -13,8 +13,17 @@ If startup reports that the name already exists, inspect its owner with:
 busctl --user status io.github.younesrabeh.CameraMonitor
 ```
 
-The Step 6 endpoint deliberately reports an empty inactive state. Live PipeWire events will be
-connected in Step 7; an empty result alone is not a D-Bus failure.
+The `serve-dbus` diagnostic deliberately reports an empty inactive state. The normal `run` command
+connects live PipeWire events; an empty session result while no application is capturing is not a
+D-Bus failure.
+
+## Backend remains unavailable
+
+Run with `--log-level debug` and inspect the retry reason. The daemon initially reports
+`BackendAvailable=false` while connecting and retries failures with bounded exponential backoff.
+Check the active user's `XDG_RUNTIME_DIR`, `pipewire-0` socket, and `PIPEWIRE_REMOTE` value. A
+backend failure also clears active sessions before publishing unavailability so clients do not
+retain stale camera claims.
 
 ## PipeWire inspection cannot connect
 

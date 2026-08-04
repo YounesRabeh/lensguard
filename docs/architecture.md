@@ -143,6 +143,36 @@ notifications. Duplicate domain events therefore produce no public notification.
 contract is in `dbus/io.github.younesrabeh.CameraMonitor1.xml` and client semantics are documented
 in `docs/dbus-api.md`.
 
-The Step 6 `serve-dbus` command publishes an empty standalone state so the transport can be tested
-without PipeWire. Combining the PipeWire source, resolver, state, and D-Bus service remains the
-Step 7 application-orchestration boundary.
+The `serve-dbus` command publishes an empty standalone state so the transport can be tested without
+PipeWire. The normal daemon path is described below.
+
+## Daemon orchestration and recovery
+
+`camera-monitor` owns three explicitly separated stages:
+
+```text
+PipeWire main-loop thread
+  → bounded adapter queue (256)
+  → blocking backend supervisor
+  → bounded application queue (128)
+  → resolver/state task
+  → bounded publication queue (128)
+  → D-Bus publisher task
+```
+
+Native callbacks copy and correlate metadata on the dedicated PipeWire thread and use a
+non-blocking bounded send. Queue overload ends that observation so the supervisor can reconnect
+and reconcile rather than grow memory or silently retain stale state. The supervisor polls the
+source with a cancellation interval, reports availability events, and retries initialization or
+disconnects with exponential delays from 250 ms through a 30-second maximum.
+
+Application identity lookup runs on Tokio's blocking pool. The bounded input queue continues
+accepting backend events while the ordered application task awaits procfs or desktop metadata. It
+owns an independent `MonitorState` reducer. Before publishing a backend-unavailable
+event, it emits deterministic stop events for every active session; a later connection emits
+`BackendRecovered` and rebuilds observation from a fresh PipeWire graph.
+
+The publisher is the only owner that mutates the exported D-Bus state. SIGINT and SIGTERM set a
+shared cancellation flag, stop and join the backend, drain both bounded queues, release the D-Bus
+name, and enforce a five-second deadline for asynchronous task cleanup. Normal operation uses
+only user-session PipeWire and D-Bus resources and requires no elevated privileges.

@@ -19,7 +19,7 @@ pub use graph::{
     RawPort, RegistryEvent, RegistryObjectKind,
 };
 pub use registry::inspect_pipewire;
-pub use source::PipeWireEventSource;
+pub use source::{PIPEWIRE_EVENT_QUEUE_CAPACITY, PipeWireEventSource};
 
 /// The workspace version used by this crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

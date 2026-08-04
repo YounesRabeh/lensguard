@@ -1,9 +1,9 @@
 # Development
 
-LensGuard has completed Step 6's D-Bus contract. A live adapter emits domain camera-session events
-enriched from trusted PipeWire hints, procfs, standard desktop entries, and Flatpak metadata. An
-independently runnable user-session D-Bus endpoint now exposes stable DTOs, properties, methods,
-and signals. PipeWire-to-D-Bus orchestration and UI behavior do not exist yet.
+LensGuard has completed Step 7's long-running daemon. It supervises PipeWire with bounded retry,
+resolves application identity off native callbacks, reconciles stale sessions after backend loss,
+and publishes the resulting state over the user-session D-Bus. GNOME Shell UI behavior does not
+exist yet.
 
 ## Recorded local environment
 
@@ -86,6 +86,7 @@ Both directories are ignored by Git. To inspect the daemon bootstrap executable:
 
 ```sh
 cargo run -p camera-monitor -- --version
+cargo run -p camera-monitor -- --log-level info run
 cargo run -p camera-monitor -- inspect-pipewire
 cargo run -p camera-monitor -- watch-pipewire
 cargo run -p camera-monitor -- serve-dbus
@@ -95,10 +96,16 @@ The watcher resolves application names on the daemon consumer thread. A typical 
 `START ... application="Snapshot" ...`; if metadata is unavailable it uses a safe process-based
 name or `Unknown application` without dropping the session.
 
-`serve-dbus` owns `io.github.younesrabeh.CameraMonitor` until Ctrl+C and publishes an initially
-empty Step 6 state. Use the commands in [the D-Bus API reference](dbus-api.md) from a second
-terminal. Isolated D-Bus integration tests use `dbus-daemon`; environments that forbid Unix
-socket creation must run `cargo test -p camera-dbus` outside that sandbox.
+No command and the explicit `run` command both start the functional daemon. `--log-level` accepts
+`trace`, `debug`, `info`, `warn`, or `error` and can appear before or after the command. SIGINT and
+SIGTERM both trigger graceful shutdown. `inspect-pipewire`, `watch-pipewire`, and `serve-dbus`
+remain focused diagnostics; use `--help` to list the syntax.
+
+The daemon acquires `io.github.younesrabeh.CameraMonitor`, initially reports the backend as
+unavailable while connecting, and then publishes live state. Failed connections retry after
+250 ms, doubling to a maximum of 30 seconds. Internal queues are bounded at 256 adapter events and
+128 events for each application stage. Isolated D-Bus integration tests use `dbus-daemon`;
+environments that forbid Unix socket creation must run those tests outside that sandbox.
 
 ## Troubleshooting application identity
 
@@ -116,6 +123,9 @@ socket creation must run `cargo test -p camera-dbus` outside that sandbox.
 
 See [the application-resolution smoke test](../tests/manual/application-resolution.md) for live
 verification.
+
+See [the daemon lifecycle smoke test](../tests/manual/daemon-lifecycle.md) for reproducible normal,
+signal, and backend-loss process checks.
 
 Step 1 intentionally has no live GNOME enable/disable test automation. To verify lifecycle
 loading manually, install the generated bundle in a disposable GNOME user session, enable and

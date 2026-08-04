@@ -1,8 +1,8 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use std::sync::mpsc::{self, Receiver, SyncSender};
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError, SyncSender, TrySendError};
 use std::thread::{self, JoinHandle};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use camera_core::{CameraEventSource, MonitorEvent};
 use tracing::warn;
@@ -12,6 +12,9 @@ use crate::{CorrelationEngine, PipeWireError, RegistryEvent, observer::attach_re
 struct Shutdown;
 
 type ReadySignal = Rc<RefCell<Option<SyncSender<Result<(), String>>>>>;
+
+/// Maximum number of domain events retained between the `PipeWire` callback and its consumer.
+pub const PIPEWIRE_EVENT_QUEUE_CAPACITY: usize = 256;
 
 /// Blocking domain-event source backed by a dedicated `PipeWire` main-loop thread.
 ///
@@ -32,7 +35,7 @@ impl PipeWireEventSource {
     /// or initial registry synchronization fails.
     pub fn connect() -> Result<Self, PipeWireError> {
         let (ready_sender, ready_receiver) = mpsc::sync_channel(1);
-        let (event_sender, events) = mpsc::channel();
+        let (event_sender, events) = mpsc::sync_channel(PIPEWIRE_EVENT_QUEUE_CAPACITY);
         let (shutdown, shutdown_receiver) = pipewire::channel::channel();
         let worker = thread::Builder::new()
             .name(String::from("lensguard-pipewire"))
@@ -53,6 +56,24 @@ impl PipeWireEventSource {
                 let _ = worker.join();
                 Err(PipeWireError::InitializationChannelClosed)
             }
+        }
+    }
+
+    /// Waits up to `timeout` for the next event.
+    ///
+    /// `Ok(None)` means that the timeout elapsed and allows an owner to observe cancellation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PipeWireError::EventChannelClosed`] when the monitor thread has ended.
+    pub fn next_event_timeout(
+        &mut self,
+        timeout: Duration,
+    ) -> Result<Option<MonitorEvent>, PipeWireError> {
+        match self.events.recv_timeout(timeout) {
+            Ok(event) => Ok(Some(event)),
+            Err(RecvTimeoutError::Timeout) => Ok(None),
+            Err(RecvTimeoutError::Disconnected) => Err(PipeWireError::EventChannelClosed),
         }
     }
 }
@@ -79,7 +100,7 @@ impl Drop for PipeWireEventSource {
 
 fn monitor_thread(
     ready_sender: &SyncSender<Result<(), String>>,
-    event_sender: &mpsc::Sender<MonitorEvent>,
+    event_sender: &SyncSender<MonitorEvent>,
     shutdown_receiver: pipewire::channel::Receiver<Shutdown>,
 ) {
     if let Err(error) = run_monitor(ready_sender, event_sender, shutdown_receiver) {
@@ -89,7 +110,7 @@ fn monitor_thread(
 
 fn run_monitor(
     ready_sender: &SyncSender<Result<(), String>>,
-    event_sender: &mpsc::Sender<MonitorEvent>,
+    event_sender: &SyncSender<MonitorEvent>,
     shutdown_receiver: pipewire::channel::Receiver<Shutdown>,
 ) -> Result<(), PipeWireError> {
     pipewire::init();
@@ -102,13 +123,12 @@ fn run_monitor(
 
     let engine_for_events = Rc::clone(&engine);
     let sender_for_events = event_sender.clone();
+    let main_loop_for_events = main_loop.downgrade();
     let on_event: Rc<dyn Fn(RegistryEvent)> = Rc::new(move |event| {
-        match engine_for_events
-            .borrow_mut()
-            .apply(event, current_unix_ms())
+        if !apply_registry_event(&engine_for_events, &sender_for_events, event)
+            && let Some(main_loop) = main_loop_for_events.upgrade()
         {
-            Ok(events) => send_events(&sender_for_events, events),
-            Err(error) => warn!(%error, "ignored malformed PipeWire graph change"),
+            main_loop.quit();
         }
     });
     let _observation = attach_registry(&registry, &on_event);
@@ -194,18 +214,41 @@ fn run_monitor(
     Ok(())
 }
 
+fn apply_registry_event(
+    engine: &RefCell<CorrelationEngine>,
+    sender: &SyncSender<MonitorEvent>,
+    event: RegistryEvent,
+) -> bool {
+    match engine.borrow_mut().apply(event, current_unix_ms()) {
+        Ok(events) => send_events(sender, events),
+        Err(error) => {
+            warn!(%error, "ignored malformed PipeWire graph change");
+            true
+        }
+    }
+}
+
 fn signal_initial_error(ready: &ReadySignal, details: &str) {
     if let Some(sender) = ready.borrow_mut().take() {
         let _ = sender.send(Err(details.to_owned()));
     }
 }
 
-fn send_events(sender: &mpsc::Sender<MonitorEvent>, events: Vec<MonitorEvent>) {
+fn send_events(sender: &SyncSender<MonitorEvent>, events: Vec<MonitorEvent>) -> bool {
     for event in events {
-        if sender.send(event).is_err() {
-            break;
+        match sender.try_send(event) {
+            Ok(()) => {}
+            Err(TrySendError::Full(_)) => {
+                warn!(
+                    capacity = PIPEWIRE_EVENT_QUEUE_CAPACITY,
+                    "PipeWire event queue is full; reconnecting to reconcile state"
+                );
+                return false;
+            }
+            Err(TrySendError::Disconnected(_)) => return false,
         }
     }
+    true
 }
 
 fn current_unix_ms() -> u64 {

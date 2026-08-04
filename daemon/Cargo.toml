@@ -15,6 +15,11 @@ camera-app-resolver.workspace = true
 camera-core.workspace = true
 camera-dbus.workspace = true
 camera-pipewire.workspace = true
-tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "signal"] }
+thiserror = "2.0.19"
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
+
+[dev-dependencies]
+futures-util = "0.3.33"
+zbus = { version = "5.13.2", default-features = false, features = ["tokio"] }

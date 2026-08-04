@@ -1,100 +1,92 @@
+use std::future::Future;
 use std::process::ExitCode;
 
 use camera_app_resolver::{ApplicationResolver, ResolutionRequest};
-use camera_core::{CameraEventSource, MonitorEvent, MonitorState};
+use camera_core::{CameraEventSource, MonitorEvent};
+use camera_monitor::{Command, Config, USAGE};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() -> ExitCode {
-    match std::env::args().nth(1).as_deref() {
-        Some("--version" | "-V") => {
+    let config = match Config::parse_from(std::env::args_os().skip(1)) {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("camera-monitor: {error}\n{USAGE}");
+            return ExitCode::from(2);
+        }
+    };
+
+    match config.command {
+        Command::Version => {
             println!("camera-monitor {VERSION}");
             ExitCode::SUCCESS
         }
-        Some("inspect-pipewire") => inspect_pipewire(),
-        Some("watch-pipewire") => watch_pipewire(),
-        Some("serve-dbus") => serve_dbus(),
-        None => {
-            eprintln!(
-                "camera-monitor {VERSION}: use inspect-pipewire, watch-pipewire, or serve-dbus"
-            );
+        Command::Help => {
+            println!("{USAGE}");
             ExitCode::SUCCESS
         }
-        Some(argument) => {
-            eprintln!("camera-monitor: unsupported argument '{argument}'; try --version");
-            ExitCode::from(2)
+        command => {
+            if let Err(error) = initialize_logging(config.log_level) {
+                eprintln!("camera-monitor: failed to initialize logging: {error}");
+                return ExitCode::FAILURE;
+            }
+            dispatch(command)
         }
     }
 }
 
-fn serve_dbus() -> ExitCode {
-    if !initialize_logging() {
-        return ExitCode::FAILURE;
+fn dispatch(command: Command) -> ExitCode {
+    match command {
+        Command::Run => run_async(camera_monitor::run_daemon()),
+        Command::InspectPipeWire => inspect_pipewire(),
+        Command::WatchPipeWire => watch_pipewire(),
+        Command::ServeDbus => run_async(camera_monitor::run_standalone_dbus()),
+        Command::Version | Command::Help => unreachable!("handled before logging initialization"),
     }
+}
+
+fn run_async(future: impl Future<Output = Result<(), camera_monitor::RuntimeError>>) -> ExitCode {
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(runtime) => runtime,
         Err(error) => {
-            eprintln!("camera-monitor: failed to create D-Bus runtime: {error}");
+            tracing::error!(%error, "failed to create asynchronous runtime");
             return ExitCode::FAILURE;
         }
     };
-    runtime.block_on(async {
-        let service = match camera_dbus::DbusService::session(MonitorState::new()).await {
-            Ok(service) => service,
-            Err(error) => {
-                eprintln!("camera-monitor: D-Bus service failed to start: {error}");
-                return ExitCode::FAILURE;
-            }
-        };
-        println!(
-            "D-Bus camera monitor ready at {} {}; press Ctrl+C to stop",
-            camera_dbus::BUS_NAME,
-            camera_dbus::OBJECT_PATH
-        );
-        if let Err(error) = tokio::signal::ctrl_c().await {
-            eprintln!("camera-monitor: failed to wait for shutdown signal: {error}");
-            return ExitCode::FAILURE;
+    match runtime.block_on(future) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            tracing::error!(%error, "daemon operation failed");
+            ExitCode::FAILURE
         }
-        if let Err(error) = service.shutdown().await {
-            eprintln!("camera-monitor: D-Bus service shutdown failed: {error}");
-            return ExitCode::FAILURE;
-        }
-        ExitCode::SUCCESS
-    })
+    }
 }
 
 fn inspect_pipewire() -> ExitCode {
-    if !initialize_logging() {
-        return ExitCode::FAILURE;
-    }
-
     match camera_pipewire::inspect_pipewire() {
         Ok(graph) => {
             print!("{}", graph.diagnostic_summary());
             ExitCode::SUCCESS
         }
         Err(error) => {
-            eprintln!("camera-monitor: PipeWire inspection failed: {error}");
+            tracing::error!(%error, "PipeWire inspection failed");
             ExitCode::FAILURE
         }
     }
 }
 
 fn watch_pipewire() -> ExitCode {
-    if !initialize_logging() {
-        return ExitCode::FAILURE;
-    }
     let mut source = match camera_pipewire::PipeWireEventSource::connect() {
         Ok(source) => source,
         Err(error) => {
-            eprintln!("camera-monitor: PipeWire monitor failed to start: {error}");
+            tracing::error!(%error, "PipeWire monitor failed to start");
             return ExitCode::FAILURE;
         }
     };
     let mut resolver = match ApplicationResolver::new(128) {
         Ok(resolver) => resolver,
         Err(error) => {
-            eprintln!("camera-monitor: application resolver failed to start: {error}");
+            tracing::error!(%error, "application resolver failed to start");
             return ExitCode::FAILURE;
         }
     };
@@ -102,13 +94,10 @@ fn watch_pipewire() -> ExitCode {
 
     loop {
         match source.next_event() {
-            Ok(Some(event)) => {
-                let event = resolve_application(event, &mut resolver);
-                print_monitor_event(&event);
-            }
+            Ok(Some(event)) => print_monitor_event(&resolve_application(event, &mut resolver)),
             Ok(None) => return ExitCode::SUCCESS,
             Err(error) => {
-                eprintln!("camera-monitor: PipeWire monitor ended: {error}");
+                tracing::error!(%error, "PipeWire monitor ended");
                 return ExitCode::FAILURE;
             }
         }
@@ -129,18 +118,14 @@ fn resolve_application(event: MonitorEvent, resolver: &mut ApplicationResolver) 
     }
 }
 
-fn initialize_logging() -> bool {
-    if let Err(error) = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+fn initialize_logging(
+    level: tracing::Level,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    tracing_subscriber::fmt()
+        .with_max_level(level)
         .with_target(false)
         .compact()
         .try_init()
-    {
-        eprintln!("camera-monitor: failed to initialize diagnostic logging: {error}");
-        false
-    } else {
-        true
-    }
 }
 
 fn print_monitor_event(event: &MonitorEvent) {

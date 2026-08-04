@@ -806,42 +806,42 @@ Assemble the PipeWire adapter, resolver, domain state, and D-Bus service into a 
 
 ### Checklist
 
-- [ ] Define explicit task ownership and channel flow.
-- [ ] Keep PipeWire callback work minimal.
-- [ ] Route events to the application/state layer.
-- [ ] Resolve application identity asynchronously.
-- [ ] Publish state changes through D-Bus.
-- [ ] Handle SIGINT and SIGTERM gracefully.
-- [ ] Handle PipeWire startup delay.
-- [ ] Retry recoverable PipeWire connection failures with bounded backoff.
-- [ ] Clear or reconcile stale sessions after backend loss.
-- [ ] Set `BackendAvailable` correctly.
-- [ ] Prevent unbounded queues and task leaks.
-- [ ] Add structured logging with configurable verbosity.
-- [ ] Add `--log-level`, `--version`, and diagnostic options.
-- [ ] Ensure normal operation requires no root privileges.
+- [x] Define explicit task ownership and channel flow.
+- [x] Keep PipeWire callback work minimal.
+- [x] Route events to the application/state layer.
+- [x] Resolve application identity asynchronously.
+- [x] Publish state changes through D-Bus.
+- [x] Handle SIGINT and SIGTERM gracefully.
+- [x] Handle PipeWire startup delay.
+- [x] Retry recoverable PipeWire connection failures with bounded backoff.
+- [x] Clear or reconcile stale sessions after backend loss.
+- [x] Set `BackendAvailable` correctly.
+- [x] Prevent unbounded queues and task leaks.
+- [x] Add structured logging with configurable verbosity.
+- [x] Add `--log-level`, `--version`, and diagnostic options.
+- [x] Ensure normal operation requires no root privileges.
 
 ### Minimum testing requirements
 
 **Unit tests**
 
-- [ ] Backoff policy.
-- [ ] Configuration parsing.
-- [ ] Event-to-state-to-publication flow using fakes.
+- [x] Backoff policy.
+- [x] Configuration parsing.
+- [x] Event-to-state-to-publication flow using fakes.
 
 **Integration tests**
 
-- [ ] Fake backend start/update/stop reaches D-Bus.
-- [ ] Backend failure updates availability.
-- [ ] Backend recovery restores observation.
-- [ ] Shutdown completes within a bounded duration.
-- [ ] Slow resolver does not block event ingestion.
+- [x] Fake backend start/update/stop reaches D-Bus.
+- [x] Backend failure updates availability.
+- [x] Backend recovery restores observation.
+- [x] Shutdown completes within a bounded duration.
+- [x] Slow resolver does not block event ingestion.
 
 **Process smoke tests**
 
-- [ ] Daemon remains running in a normal user session.
-- [ ] SIGTERM produces a clean exit status.
-- [ ] Restarting PipeWire or using a simulated backend loss does not crash the daemon.
+- [x] Daemon remains running in a normal user session.
+- [x] SIGTERM produces a clean exit status.
+- [x] Restarting PipeWire or using a simulated backend loss does not crash the daemon.
 
 ### Deliverables
 
