@@ -1,8 +1,7 @@
 # Development
 
-LensGuard has completed the Step 2 pure-domain baseline. The domain state machine is implemented
-and fully testable without desktop services. Camera monitoring, D-Bus, and UI behavior do not
-exist yet.
+LensGuard has completed the Step 3 `PipeWire` registry-observation baseline. Candidate graph
+objects can be inspected, but camera-session correlation, D-Bus, and UI behavior do not exist yet.
 
 ## Recorded local environment
 
@@ -32,8 +31,8 @@ Install the development tools with Fedora's package manager. Package names can c
 Fedora releases; use `dnf search` if a listed package is unavailable.
 
 ```sh
-sudo dnf install cargo rust rustfmt clippy make gjs gnome-shell \
-  pipewire wireplumber dbus-tools systemd unzip
+sudo dnf install cargo rust rustfmt clippy clang pkgconf-pkg-config make gjs gnome-shell \
+  pipewire pipewire-devel wireplumber dbus-tools systemd unzip
 ```
 
 ShellCheck is optional but recommended:
@@ -48,10 +47,11 @@ components when using that distribution.
 
 ## Other Linux distributions
 
-Install equivalent packages providing stable Rust 1.85+, Cargo, rustfmt, Clippy, GNU Make, GJS,
-GNOME Shell extension tooling, PipeWire tools, WirePlumber tools, D-Bus command-line tools,
-systemd, and unzip. GNOME compatibility is deliberately recorded in `extension/metadata.json`;
-update and test that value before using the extension on another major GNOME release.
+Install equivalent packages providing stable Rust 1.85+, Cargo, rustfmt, Clippy, Clang/libclang,
+pkg-config, GNU Make, GJS, GNOME Shell extension tooling, PipeWire tools and development headers,
+WirePlumber tools, D-Bus command-line tools, systemd, and unzip. GNOME compatibility is
+deliberately recorded in `extension/metadata.json`; update and test that value before using the
+extension on another major GNOME release.
 
 ## Commands
 
@@ -77,6 +77,7 @@ Both directories are ignored by Git. To inspect the daemon bootstrap executable:
 
 ```sh
 cargo run -p camera-monitor -- --version
+cargo run -p camera-monitor -- inspect-pipewire
 ```
 
 Step 1 intentionally has no live GNOME enable/disable test automation. To verify lifecycle

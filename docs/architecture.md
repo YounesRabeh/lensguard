@@ -56,3 +56,28 @@ tests.
 
 D-Bus data-transfer objects will be defined separately in `camera-dbus`; the domain entities in
 this document are not the public wire contract.
+
+## PipeWire registry adapter
+
+`camera-pipewire` owns all transient numeric `PipeWire` IDs. Registry and bound-object callbacks
+are copied immediately into owned string property maps and represented as `RegistryEvent` values.
+The same events drive synthetic unit and fixture tests, so graph behavior is independent of a
+desktop session.
+
+The raw graph stores nodes, ports, and links in ordered maps. Node info and port/link info events
+merge late metadata into the original registry properties. Removing a node also removes known
+child ports and connected links; later removal callbacks are harmless.
+
+Step 3 classification follows the session-manager media classes:
+
+- `Video/Source` is a camera-source candidate;
+- `Stream/Input/Video` is an application video-input candidate;
+- audio classes and video output/playback classes are unrelated.
+
+These are candidates, not camera sessions. The adapter deliberately does not decide whether a
+link is active or correlate a source with an application; that is Step 4 scope. Properties such as
+`device.api`, `media.role`, and `node.virtual` are retained for that later decision.
+
+`camera-monitor inspect-pipewire` performs two `PipeWire` synchronization barriers, prints a
+deterministically ordered summary, and exits. Core errors are converted into typed errors rather
+than panics. Long-running retry and reconnection policy remains daemon-orchestration scope.

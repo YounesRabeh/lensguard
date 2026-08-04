@@ -19,6 +19,8 @@ printf '%s\n' 'LensGuard development prerequisite check'
 check_command cargo 'Rust builds and tests'
 check_command rustc 'Rust compiler'
 check_command rustfmt 'Rust formatting'
+check_command clang 'PipeWire binding generation'
+check_command pkg-config 'native PipeWire library discovery'
 check_command gnome-shell 'GNOME Shell compatibility discovery'
 check_command gnome-extensions 'extension packaging'
 check_command gjs 'extension syntax checks'
@@ -37,6 +39,13 @@ if cargo clippy --version >/dev/null 2>&1; then
     printf '%-18s %s\n' 'cargo clippy' 'found (Rust linting)'
 else
     printf '%-18s %s\n' 'cargo clippy' 'MISSING (Rust linting)' >&2
+    missing=1
+fi
+
+if pkg-config --exists libpipewire-0.3; then
+    printf '%-18s %s\n' 'libpipewire-0.3' "found ($(pkg-config --modversion libpipewire-0.3))"
+else
+    printf '%-18s %s\n' 'libpipewire-0.3' 'MISSING (PipeWire development files)' >&2
     missing=1
 fi
 
