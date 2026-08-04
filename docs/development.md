@@ -1,10 +1,13 @@
 # Development
 
-LensGuard has completed Step 9's live vertical MVP slice. The daemon supervises PipeWire with
-bounded retry, resolves application identity off native callbacks, reconciles stale sessions after
-backend loss, and publishes the resulting state over the user-session D-Bus. The extension uses
-only asynchronous D-Bus calls, validates daemon payloads, and resynchronizes across daemon loss and
-restart. Production packages contain no mock setting or mock data provider.
+LensGuard has completed Step 10's non-notification preferences and UX scope. The daemon supervises
+PipeWire with bounded retry, resolves application identity off native callbacks, reconciles stale
+sessions after backend loss, and publishes the resulting state over the user-session D-Bus. The
+extension uses only asynchronous D-Bus calls, validates daemon payloads, and resynchronizes across
+daemon loss and restart. It now provides an Adwaita preferences window, live backend-failure
+presentation settings, bounded and sanitized external display strings, and accessible Quick
+Settings labels. Production packages contain no mock setting or mock data provider, and
+notifications remain intentionally unimplemented.
 
 ## Recorded local environment
 
@@ -82,6 +85,8 @@ make lint
 make test
 make build
 make check
+make smoke-extension
+make capture-extension-screenshots
 ```
 
 `make build` writes Rust artifacts to `target/` and a development extension bundle to `dist/`.
@@ -143,6 +148,26 @@ make smoke-extension
 The fake service is restricted to test fixtures. The packaged extension always connects to
 `io.github.younesrabeh.CameraMonitor` on the user session bus.
 
+## Extension preferences
+
+Open the LensGuard submenu in Quick Settings and select **Preferences**, or use the preferences
+button in GNOME Extensions. Both settings are extension-owned, apply without restarting GNOME
+Shell, and default to the most visible failure reporting:
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| Show monitoring warnings | On | Uses explicit warning language and `dialog-warning-symbolic` while the PipeWire backend is unavailable. |
+| Keep the status icon visible | On | Keeps a failure status icon in the panel while camera use cannot be determined. |
+
+Turning warning presentation off uses neutral unavailable-state language and
+`dialog-information-symbolic`; it never claims the camera is safe or inactive. Turning the failure
+icon off only hides that panel status icon. It does not hide an active-camera indicator and does
+not erase the unavailable state from the LensGuard Quick Settings menu.
+
+The schema defaults and descriptions are tested from a freshly compiled temporary schema. The
+GNOME Shell smoke suite changes both preferences live and verifies that they survive an extension
+disable/enable cycle using an isolated in-memory settings backend.
+
 For a physical-camera check, build first, open GNOME Camera, then run the hardware-gated smoke test
 from another terminal. Stop capture within 30 seconds after the active marker appears:
 
@@ -159,3 +184,5 @@ still exercising the complete PipeWire to D-Bus to GNOME actor path. Exact expec
 the recorded Step 9 run are in
 [the end-to-end camera test](../tests/manual/end-to-end-camera.md). The former
 [Step 8 mock test](../tests/manual/gnome-mock-ui.md) is retained only as a historical record.
+Step 10's full visual review and current screenshots are recorded in
+[the GNOME UX review](../tests/manual/gnome-ux-review.md).

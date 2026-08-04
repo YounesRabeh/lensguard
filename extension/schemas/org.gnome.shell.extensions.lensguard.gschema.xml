@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.lensguard"
+          path="/org/gnome/shell/extensions/lensguard/">
+    <key name="show-backend-unavailable-warning" type="b">
+      <default>true</default>
+      <summary>Show camera monitoring warnings</summary>
+      <description>
+        Use warning language and a warning icon when the camera monitoring backend is unavailable.
+      </description>
+    </key>
+    <key name="show-indicator-during-backend-failure" type="b">
+      <default>true</default>
+      <summary>Keep the status icon visible during monitoring failures</summary>
+      <description>
+        Show a panel status icon while LensGuard cannot determine whether a camera is in use.
+      </description>
+    </key>
+  </schema>
+</schemalist>

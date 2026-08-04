@@ -19,5 +19,13 @@ gjs -m "$repo_root/extension/tests/sessionModel.test.js"
 gjs -m "$repo_root/extension/tests/mockDataProvider.test.js"
 gjs -m "$repo_root/extension/tests/dbusPayload.test.js"
 gjs -m "$repo_root/extension/tests/dbusClient.test.js"
+gjs -m "$repo_root/extension/tests/preferences.test.js"
 
-printf '%s\n' 'GNOME extension JavaScript and metadata checks passed.'
+schema_test_dir=$(mktemp -d --tmpdir lensguard-schema.XXXXXX)
+trap 'rm -rf -- "$schema_test_dir"' EXIT
+cp "$repo_root/extension/schemas/org.gnome.shell.extensions.lensguard.gschema.xml" \
+    "$schema_test_dir/"
+glib-compile-schemas --strict "$schema_test_dir"
+gjs -m "$repo_root/extension/tests/settingsSchema.test.js" "$schema_test_dir"
+
+printf '%s\n' 'GNOME extension JavaScript, metadata, and schema checks passed.'

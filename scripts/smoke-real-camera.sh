@@ -28,7 +28,7 @@ dbus-run-session -- bash -c '
     daemon_pid=$!
     trap '\''kill -TERM "$daemon_pid" 2>/dev/null || true; wait "$daemon_pid" 2>/dev/null || true'\'' EXIT
 
-    gnome-shell-test-tool \
+    env GSETTINGS_BACKEND=memory gnome-shell-test-tool \
         --headless \
         --disable-animations \
         --extension "$archive" \

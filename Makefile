@@ -1,4 +1,4 @@
-.PHONY: format format-check lint test check build smoke-extension smoke-real-camera bootstrap clean
+.PHONY: format format-check lint test check build smoke-extension smoke-real-camera capture-extension-screenshots bootstrap clean
 
 format:
 	cargo fmt --all
@@ -24,6 +24,9 @@ smoke-extension: build
 
 smoke-real-camera: build
 	./scripts/smoke-real-camera.sh dist/lensguard@younesrabeh.github.io.shell-extension.zip
+
+capture-extension-screenshots: build
+	./scripts/capture-extension-screenshots.sh dist/lensguard@younesrabeh.github.io.shell-extension.zip
 
 check: format-check lint test build
 

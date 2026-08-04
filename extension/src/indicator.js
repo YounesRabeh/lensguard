@@ -7,9 +7,11 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
 
+import {formatSessionLabel} from './sessionModel.js';
+
 const LensGuardToggle = GObject.registerClass(
 class LensGuardToggle extends QuickSettings.QuickMenuToggle {
-    constructor() {
+    constructor(openPreferences) {
         super({
             title: 'LensGuard',
             subtitle: 'No camera in use',
@@ -21,6 +23,13 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
         this.name = 'lensguard-quick-toggle';
         this._sessionSection = new PopupMenu.PopupMenuSection();
         this.menu.addMenuItem(this._sessionSection);
+
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        const preferencesItem = new PopupMenu.PopupMenuItem('Preferences');
+        preferencesItem.name = 'lensguard-preferences';
+        preferencesItem.accessible_name = 'Open LensGuard preferences';
+        preferencesItem.connect('activate', () => openPreferences());
+        this.menu.addMenuItem(preferencesItem);
     }
 
     render(state) {
@@ -43,7 +52,9 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
 
         if (state.status === 'backend-unavailable') {
             this._addInformationItem(
-                'Camera use cannot be determined while monitoring is unavailable.');
+                state.backendWarningVisible
+                    ? 'Camera use cannot be determined while monitoring is unavailable.'
+                    : 'Camera status is currently unavailable.');
             return;
         }
 
@@ -54,7 +65,7 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
 
         state.sessions.forEach((session, index) => {
             const item = new PopupMenu.PopupMenuItem(
-                `${session.applicationName} — ${session.cameraName}`,
+                formatSessionLabel(session),
                 {reactive: false, can_focus: false});
             item.name = `lensguard-session-${index}`;
             item.accessible_name =
@@ -75,7 +86,7 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
 
 export const LensGuardIndicator = GObject.registerClass(
 class LensGuardIndicator extends QuickSettings.SystemIndicator {
-    constructor() {
+    constructor(openPreferences) {
         super();
 
         this.name = 'lensguard-indicator';
@@ -88,7 +99,7 @@ class LensGuardIndicator extends QuickSettings.SystemIndicator {
         this._statusIcon.add_style_class_name('privacy-indicator');
         this._statusIcon.hide();
 
-        this._toggle = new LensGuardToggle();
+        this._toggle = new LensGuardToggle(openPreferences);
         this.quickSettingsItems.push(this._toggle);
 
         this._tooltip = new St.Label({

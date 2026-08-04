@@ -7,12 +7,29 @@ export const ViewStatus = Object.freeze({
     SERVICE_UNAVAILABLE: 'service-unavailable',
 });
 
-function normalizedText(value, fallback) {
+const UNSAFE_DISPLAY_CHARACTERS =
+    /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
+const MAX_DISPLAY_LENGTH = 160;
+
+function normalizedIdentifier(value) {
+    if (typeof value !== 'string')
+        return '';
+
+    return value.trim();
+}
+
+export function sanitizeDisplayText(value, fallback) {
     if (typeof value !== 'string')
         return fallback;
 
-    const normalized = value.trim();
-    return normalized || fallback;
+    const normalized = value
+        .replace(UNSAFE_DISPLAY_CHARACTERS, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (!normalized)
+        return fallback;
+
+    return [...normalized].slice(0, MAX_DISPLAY_LENGTH).join('');
 }
 
 function compareText(left, right) {
@@ -45,19 +62,24 @@ export function normalizeSessions(sessions) {
         if (!session || typeof session !== 'object')
             continue;
 
-        const sessionId = normalizedText(session.sessionId, '');
+        const sessionId = normalizedIdentifier(session.sessionId);
         if (!sessionId || uniqueSessions.has(sessionId))
             continue;
 
         uniqueSessions.set(sessionId, {
             sessionId,
-            applicationName: normalizedText(
+            applicationName: sanitizeDisplayText(
                 session.applicationName, 'Unknown application'),
-            cameraName: normalizedText(session.cameraName, 'Unknown camera'),
+            cameraName: sanitizeDisplayText(
+                session.cameraName, 'Unknown camera'),
         });
     }
 
     return [...uniqueSessions.values()].sort(compareSessions);
+}
+
+export function formatSessionLabel(session) {
+    return `${session.applicationName} — ${session.cameraName}`;
 }
 
 export function createViewState(snapshot = {}) {
@@ -96,6 +118,7 @@ export function createViewState(snapshot = {}) {
             subtitle: 'Camera monitoring unavailable',
             accessibleLabel: 'LensGuard camera monitoring is unavailable',
             tooltip: 'LensGuard: camera monitoring unavailable',
+            backendWarningVisible: true,
             sessions,
         };
     }

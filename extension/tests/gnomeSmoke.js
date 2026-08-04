@@ -48,6 +48,7 @@ function sessionLabels(lensGuardIndicator) {
 
 export async function run() {
     const service = new FakeCameraService();
+    let settings = null;
     const discord = createSessionTuple({
         sessionId: 'discord',
         applicationName: 'Discord',
@@ -68,6 +69,19 @@ export async function run() {
         await waitFor(() => indicators().length === 1,
             'extension did not add its Quick Settings indicator ' +
             `(state=${extension.state}, error=${extension.error ?? 'none'})`);
+        settings = extension.stateObj?._settings;
+        assert(settings,
+            'loaded extension did not retain its GSettings instance');
+        settings.reset('show-backend-unavailable-warning');
+        settings.reset('show-indicator-during-backend-failure');
+        const preferencesItem = indicator()._toggle.menu
+            ._getMenuItems()
+            .find(item => item.name === 'lensguard-preferences');
+        assert(preferencesItem,
+            'Quick Settings menu does not expose Preferences');
+        assert(preferencesItem.accessible_name ===
+            'Open LensGuard preferences',
+        'Preferences action does not have a clear accessible name');
         assert(indicator()._statusIcon.visible,
             'missing service warning is not visible');
         assert(indicator()._statusIcon.icon_name === 'dialog-warning-symbolic',
@@ -115,6 +129,55 @@ export async function run() {
         await waitFor(() => !indicator()._statusIcon.visible,
             'final D-Bus stop event did not hide the icon');
 
+        service.setBackendAvailable(false);
+        await waitFor(() =>
+            indicator()._toggle.subtitle === 'Camera monitoring unavailable',
+        'backend failure did not use the default warning presentation');
+        assert(indicator()._statusIcon.visible,
+            'backend warning icon is not visible by default');
+        assert(indicator()._statusIcon.icon_name === 'dialog-warning-symbolic',
+            'backend failure did not use the warning icon by default');
+
+        settings.set_boolean(
+            'show-indicator-during-backend-failure', false);
+        await waitFor(() => !indicator()._statusIcon.visible,
+            'indicator visibility preference did not apply live');
+        assert(indicator()._toggle.subtitle === 'Camera monitoring unavailable',
+            'hiding the panel icon incorrectly erased the menu warning');
+
+        settings.set_boolean('show-backend-unavailable-warning', false);
+        settings.set_boolean('show-indicator-during-backend-failure', true);
+        await waitFor(() =>
+            indicator()._statusIcon.icon_name ===
+                'dialog-information-symbolic' &&
+            indicator()._statusIcon.visible,
+        'warning preference did not apply live');
+        assert(indicator()._toggle.subtitle === 'Camera status unavailable',
+            'disabled warnings did not use neutral status language');
+        assert(sessionLabels(indicator())[0] ===
+            'Camera status is currently unavailable.',
+        'disabled warnings retained the warning menu message');
+
+        assert(Main.extensionManager.disableExtension(UUID),
+            'disable failed during preference persistence test');
+        await waitFor(() => indicators().length === 0,
+            'indicator survived preference persistence disable');
+        assert(Main.extensionManager.enableExtension(UUID),
+            'enable failed during preference persistence test');
+        await waitFor(() => indicators().length === 1,
+            'indicator missing after preference persistence enable');
+        await waitFor(() =>
+            indicator()._toggle.subtitle === 'Camera status unavailable',
+        're-enabling the extension did not preserve preferences');
+        assert(indicator()._statusIcon.visible,
+            'persisted backend indicator preference was lost');
+
+        settings.set_boolean('show-backend-unavailable-warning', true);
+        settings.set_boolean('show-indicator-during-backend-failure', true);
+        service.setBackendAvailable(true);
+        await waitFor(() => indicator()._toggle.subtitle === 'No camera in use',
+            'restoring the backend did not return to inactive state');
+
         service.startSession(discord);
         await waitFor(() => indicator()._statusIcon.visible,
             'pre-restart session did not activate');
@@ -150,6 +213,8 @@ export async function run() {
         await waitFor(() => indicators().length === 0,
             'indicator survived final disable');
     } finally {
+        settings?.reset('show-backend-unavailable-warning');
+        settings?.reset('show-indicator-during-backend-failure');
         service.stop();
     }
 }

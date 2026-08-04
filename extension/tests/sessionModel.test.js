@@ -3,7 +3,9 @@
 import {
     ViewStatus,
     createViewState,
+    formatSessionLabel,
     normalizeSessions,
+    sanitizeDisplayText,
 } from '../src/sessionModel.js';
 
 function assert(condition, message) {
@@ -122,11 +124,33 @@ function testServiceUnavailable() {
     assertEqual(state.sessions.length, 0, 'service loss clears stale sessions');
 }
 
+function testSafeUnusualApplicationNames() {
+    const sessions = normalizeSessions([{
+        sessionId: 'unusual',
+        applicationName: '<b>Camera</b>\u202e\n meeting',
+        cameraName: 'USB <script>alert(1)</script>',
+    }]);
+
+    assertEqual(sessions[0].applicationName, '<b>Camera</b> meeting',
+        'markup remains literal while directional and control text is removed');
+    assertEqual(
+        formatSessionLabel(sessions[0]),
+        '<b>Camera</b> meeting — USB <script>alert(1)</script>',
+        'session label preserves safe literal external text');
+
+    const longName = 'x'.repeat(200);
+    assertEqual([...sanitizeDisplayText(longName, 'fallback')].length, 160,
+        'external display text is bounded');
+    assertEqual(sanitizeDisplayText('\u202e\n', 'Unknown application'),
+        'Unknown application', 'unsafe-only names use the documented fallback');
+}
+
 testSessionTransformation();
 testDuplicateHandling();
 testDerivedState();
 testStableOrdering();
 testBackendUnavailable();
 testServiceUnavailable();
+testSafeUnusualApplicationNames();
 
 print('Session model tests passed.');

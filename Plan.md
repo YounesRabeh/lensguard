@@ -994,56 +994,47 @@ Add user-facing preferences and polished privacy-indicator behavior without expa
 
 - GSettings schema.
 - Preferences window.
-- Start/stop notifications.
 - Indicator and menu presentation rules.
 - Accessibility text.
 
 ### Checklist
-
-- [ ] Add a preference to enable or disable notifications.
-- [ ] Add a preference to show or hide application names in notifications.
-- [ ] Add a preference controlling backend-unavailable warnings.
-- [ ] Add a preference controlling whether the indicator remains visible during backend failure.
-- [ ] Implement start notifications with deduplication.
-- [ ] Avoid noisy stop notifications unless explicitly enabled.
-- [ ] Group rapid session changes where appropriate.
-- [ ] Use symbolic icons and GNOME-consistent spacing.
-- [ ] Escape or safely render all external application strings.
-- [ ] Add clear accessible names.
-- [ ] Do not use misleading “safe” language or colors.
-- [ ] Keep settings owned by the extension unless the daemon genuinely needs them.
+- [x] Add a preference controlling backend-unavailable warnings.
+- [x] Add a preference controlling whether the indicator remains visible during backend failure.
+- [x] Group rapid session changes where appropriate.
+- [x] Use symbolic icons and GNOME-consistent spacing.
+- [x] Escape or safely render all external application strings.
+- [x] Add clear accessible names.
+- [x] Do not use misleading “safe” language or colors.
+- [x] Keep settings owned by the extension unless the daemon genuinely needs them.
 
 ### Minimum testing requirements
 
 **Unit tests**
 
-- [ ] Notification deduplication.
-- [ ] Preference-to-view-model behavior.
-- [ ] Safe rendering of unusual application names.
+- [x] Preference-to-view-model behavior.
+- [x] Safe rendering of unusual application names.
 
 **Schema tests**
 
-- [ ] GSettings schema compiles.
-- [ ] Defaults are documented and sensible.
+- [x] GSettings schema compiles.
+- [x] Defaults are documented and sensible.
 
 **GNOME integration tests**
 
-- [ ] Preference changes apply without restarting GNOME Shell when feasible.
-- [ ] Notifications respect settings.
-- [ ] Re-enabling the extension preserves settings.
+- [x] Preference changes apply without restarting GNOME Shell when feasible.
+- [x] Re-enabling the extension preserves settings.
 
 **Manual UX review**
 
-- [ ] One session.
-- [ ] Multiple sessions.
-- [ ] Long application names.
-- [ ] Missing application metadata.
-- [ ] Backend unavailable.
+- [x] One session.
+- [x] Multiple sessions.
+- [x] Long application names.
+- [x] Missing application metadata.
+- [x] Backend unavailable.
 
 ### Deliverables
 
 - Preferences UI.
-- Notification behavior.
 - Updated screenshots and usage documentation.
 
 ### Exit criteria

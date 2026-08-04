@@ -12,7 +12,7 @@ if [[ ! -s $archive ]]; then
 fi
 
 set +e
-dbus-run-session -- gnome-shell-test-tool \
+dbus-run-session -- env GSETTINGS_BACKEND=memory gnome-shell-test-tool \
     --headless \
     --disable-animations \
     --extension "$archive" \
