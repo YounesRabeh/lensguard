@@ -8,6 +8,10 @@ members = [
 ]
 resolver = "3"
 
+[patch.crates-io]
+# Remove after rust-bindgen releases the unique macro-fallback temporary-directory fix.
+bindgen = { git = "https://github.com/hkalbasi/rust-bindgen", rev = "8126d0791465053aa88cb4903330f8c4260a0184" }
+
 [workspace.package]
 version = "0.5.0"
 edition = "2024"
