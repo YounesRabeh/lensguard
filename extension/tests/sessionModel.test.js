@@ -105,10 +105,28 @@ function testBackendUnavailable() {
         'backend failure does not use the camera-active icon');
 }
 
+function testServiceUnavailable() {
+    const state = createViewState({
+        serviceAvailable: false,
+        backendAvailable: true,
+        sessions: [{
+            sessionId: 'stale',
+            applicationName: 'Stale application',
+            cameraName: 'Stale camera',
+        }],
+    });
+
+    assertEqual(state.status, ViewStatus.SERVICE_UNAVAILABLE,
+        'service loss has explicit status');
+    assert(!state.cameraActive, 'service loss does not claim camera use');
+    assertEqual(state.sessions.length, 0, 'service loss clears stale sessions');
+}
+
 testSessionTransformation();
 testDuplicateHandling();
 testDerivedState();
 testStableOrdering();
 testBackendUnavailable();
+testServiceUnavailable();
 
 print('Session model tests passed.');

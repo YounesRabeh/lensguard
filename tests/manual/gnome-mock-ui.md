@@ -1,5 +1,9 @@
 # GNOME mock UI test
 
+> Historical Step 8 record. Step 9 removed the production mock setting and provider; these live
+> `gsettings` commands no longer apply to current packages. Mock fixtures now exist only under
+> `extension/tests/`.
+
 Environment:
 
 - Fedora Linux 44 Workstation, GNOME Shell 50.3, GJS 1.88.1.

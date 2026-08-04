@@ -6,6 +6,7 @@ export default [{
         globals: {
             ARGV: 'readonly',
             TextDecoder: 'readonly',
+            console: 'readonly',
             global: 'readonly',
             print: 'readonly',
         },

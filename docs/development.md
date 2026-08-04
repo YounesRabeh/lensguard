@@ -1,9 +1,10 @@
 # Development
 
-LensGuard has completed Step 8's mock-driven GNOME Shell UI. The daemon still supervises PipeWire
-with bounded retry, resolves application identity off native callbacks, reconciles stale sessions
-after backend loss, and publishes the resulting state over the user-session D-Bus. The extension
-currently uses development-only mock data; the live D-Bus client belongs to Step 9.
+LensGuard has completed Step 9's live vertical MVP slice. The daemon supervises PipeWire with
+bounded retry, resolves application identity off native callbacks, reconciles stale sessions after
+backend loss, and publishes the resulting state over the user-session D-Bus. The extension uses
+only asynchronous D-Bus calls, validates daemon payloads, and resynchronizes across daemon loss and
+restart. Production packages contain no mock setting or mock data provider.
 
 ## Recorded local environment
 
@@ -129,20 +130,32 @@ verification.
 See [the daemon lifecycle smoke test](../tests/manual/daemon-lifecycle.md) for reproducible normal,
 signal, and backend-loss process checks.
 
-## GNOME mock UI
+## GNOME live D-Bus UI
 
-The Step 8 extension uses `org.gnome.shell.extensions.lensguard` key `mock-state`. Supported
-development values are `inactive`, `active-one`, `active-multiple`, and `backend-unavailable`.
-They are test-only inputs and do not read the daemon or camera hardware.
-
-Run the isolated GNOME 50 smoke test without changing the live desktop:
+Run the isolated GNOME 50 smoke test without changing the live desktop. It starts a fake D-Bus
+service and verifies initial synchronization, one and multiple sessions, final stop, daemon loss,
+restart resynchronization, and repeated extension reloads:
 
 ```sh
 make smoke-extension
 ```
 
-For live visual review, install `dist/lensguard@younesrabeh.github.io.shell-extension.zip`, enable
-the extension, and point `GSETTINGS_SCHEMA_DIR` at the installed extension's `schemas` directory
-before changing `mock-state` with `gsettings`. Exact commands, expected UI, cleanup, and the
-recorded Step 8 result are in
-[the GNOME mock UI test](../tests/manual/gnome-mock-ui.md).
+The fake service is restricted to test fixtures. The packaged extension always connects to
+`io.github.younesrabeh.CameraMonitor` on the user session bus.
+
+For a physical-camera check, build first, open GNOME Camera, then run the hardware-gated smoke test
+from another terminal. Stop capture within 30 seconds after the active marker appears:
+
+```sh
+make build
+snapshot
+# In another terminal:
+make smoke-real-camera
+```
+
+The real-camera test loads the packaged extension in an isolated headless Shell, but the real Rust
+daemon connects to the current user's PipeWire graph. This avoids changing the live desktop while
+still exercising the complete PipeWire to D-Bus to GNOME actor path. Exact expected results and
+the recorded Step 9 run are in
+[the end-to-end camera test](../tests/manual/end-to-end-camera.md). The former
+[Step 8 mock test](../tests/manual/gnome-mock-ui.md) is retained only as a historical record.

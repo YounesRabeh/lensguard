@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import {MockDataProvider} from '../src/mockDataProvider.js';
+import {MockDataProvider} from './fixtures/mockDataProvider.js';
 
 class FakeSettings {
     constructor(value) {

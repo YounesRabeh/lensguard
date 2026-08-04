@@ -935,43 +935,43 @@ Replace mock state with a resilient D-Bus client and provide complete live indic
 
 ### Checklist
 
-- [ ] Create a dedicated `dbusClient.js` abstraction.
-- [ ] Read the initial property snapshot after proxy creation.
-- [ ] Fetch active sessions on startup.
-- [ ] Subscribe to property changes and session/state signals.
-- [ ] Coalesce redundant refreshes.
-- [ ] Handle daemon not installed, not running, starting, stopping, and restarting.
-- [ ] Avoid stale active indicators after daemon loss.
-- [ ] Do not issue synchronous D-Bus calls from GNOME Shell UI paths.
-- [ ] Validate and normalize D-Bus data before rendering.
-- [ ] Return all signal subscriptions and cancellables during `disable()`.
-- [ ] Disable mock mode in production builds.
-- [ ] Add a useful menu message when the service is unavailable.
+- [x] Create a dedicated `dbusClient.js` abstraction.
+- [x] Read the initial property snapshot after proxy creation.
+- [x] Fetch active sessions on startup.
+- [x] Subscribe to property changes and session/state signals.
+- [x] Coalesce redundant refreshes.
+- [x] Handle daemon not installed, not running, starting, stopping, and restarting.
+- [x] Avoid stale active indicators after daemon loss.
+- [x] Do not issue synchronous D-Bus calls from GNOME Shell UI paths.
+- [x] Validate and normalize D-Bus data before rendering.
+- [x] Return all signal subscriptions and cancellables during `disable()`.
+- [x] Disable mock mode in production builds.
+- [x] Add a useful menu message when the service is unavailable.
 
 ### Minimum testing requirements
 
 **JavaScript unit tests**
 
-- [ ] D-Bus payload normalization using fixtures.
-- [ ] Initial sync behavior.
-- [ ] Repeated state events do not duplicate sessions.
-- [ ] Service disappearance clears stale state.
+- [x] D-Bus payload normalization using fixtures.
+- [x] Initial sync behavior.
+- [x] Repeated state events do not duplicate sessions.
+- [x] Service disappearance clears stale state.
 
 **Integration tests**
 
-- [ ] Extension client works against a fake D-Bus service.
-- [ ] Start event shows indicator.
-- [ ] Stop event hides indicator when no sessions remain.
-- [ ] Multiple sessions remain visible until the final stop.
-- [ ] Daemon restart triggers resynchronization.
+- [x] Extension client works against a fake D-Bus service.
+- [x] Start event shows indicator.
+- [x] Stop event hides indicator when no sessions remain.
+- [x] Multiple sessions remain visible until the final stop.
+- [x] Daemon restart triggers resynchronization.
 
 **End-to-end smoke tests**
 
-- [ ] Start real daemon and extension.
-- [ ] Open camera capture in an application.
-- [ ] Indicator appears within an acceptable short delay.
-- [ ] Menu shows the responsible application.
-- [ ] Stop capture and verify the indicator disappears.
+- [x] Start real daemon and extension.
+- [x] Open camera capture in an application.
+- [x] Indicator appears within an acceptable short delay.
+- [x] Menu shows the responsible application.
+- [x] Stop capture and verify the indicator disappears.
 
 ### Deliverables
 

@@ -3,8 +3,8 @@
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import {DbusClient} from './src/dbusClient.js';
 import {LensGuardIndicator} from './src/indicator.js';
-import {MockDataProvider} from './src/mockDataProvider.js';
 
 export default class LensGuardExtension extends Extension {
     enable() {
@@ -14,15 +14,14 @@ export default class LensGuardExtension extends Extension {
         this._indicator = new LensGuardIndicator();
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
 
-        this._provider = new MockDataProvider(
-            this.getSettings(),
+        this._client = new DbusClient(
             state => this._indicator?.render(state));
-        this._provider.start();
+        this._client.start();
     }
 
     disable() {
-        this._provider?.stop();
-        this._provider = null;
+        this._client?.stop();
+        this._client = null;
 
         this._indicator?.destroy();
         this._indicator = null;

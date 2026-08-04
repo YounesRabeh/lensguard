@@ -3,6 +3,5 @@
   "name": "LensGuard",
   "description": "Shows active camera applications in GNOME Shell.",
   "shell-version": ["50"],
-  "version": 1,
-  "settings-schema": "org.gnome.shell.extensions.lensguard"
+  "version": 1
 }

@@ -1,4 +1,4 @@
-# LensGuard
+![banner](.github/lensguard.png)
 
 LensGuard is a planned GNOME Shell camera-privacy indicator backed by an unprivileged Rust user
 daemon. It will observe active camera capture through PipeWire and expose session state to a
@@ -6,11 +6,11 @@ GNOME Shell extension over the user D-Bus.
 
 ## Architecture
 
-The project has completed Step 8's mock-driven GNOME Shell UI. The functional user daemon observes
-and classifies the current `PipeWire` graph, resolves application identity away from native
-callbacks, maintains camera session state, and publishes it through the stable user-session D-Bus
-contract. The extension now provides a GNOME Quick Settings privacy indicator, session menu, and
-development mock states; connection to the daemon is deliberately deferred to Step 9.
+The project has completed its first vertical MVP slice. The functional user daemon observes and
+classifies the current `PipeWire` graph, resolves application identity away from native callbacks,
+maintains camera session state, and publishes it through the stable user-session D-Bus contract.
+The GNOME Shell extension asynchronously follows that live service, shows active applications and
+cameras in Quick Settings, and clears stale state across daemon loss and restart.
 
 The repository follows ports and adapters:
 
@@ -40,7 +40,7 @@ cargo run -p camera-monitor -- serve-dbus
 ```
 
 See [docs/development.md](docs/development.md) for Fedora setup, recorded local versions, generic
-distribution guidance, and the current mock UI test procedure. Implementation sequencing
+distribution guidance, and live extension test procedures. Implementation sequencing
 and scope are defined in [Plan.md](Plan.md). Domain invariants and dependency rules are documented
 in [docs/architecture.md](docs/architecture.md).
 

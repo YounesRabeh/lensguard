@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import {createViewState} from './sessionModel.js';
+import {createViewState} from '../../src/sessionModel.js';
 
 const MOCK_STATES = Object.freeze({
     inactive: {

@@ -4,6 +4,7 @@ export const ViewStatus = Object.freeze({
     ACTIVE: 'active',
     INACTIVE: 'inactive',
     BACKEND_UNAVAILABLE: 'backend-unavailable',
+    SERVICE_UNAVAILABLE: 'service-unavailable',
 });
 
 function normalizedText(value, fallback) {
@@ -60,6 +61,23 @@ export function normalizeSessions(sessions) {
 }
 
 export function createViewState(snapshot = {}) {
+    const serviceAvailable = snapshot.serviceAvailable !== false;
+    if (!serviceAvailable) {
+        return {
+            status: ViewStatus.SERVICE_UNAVAILABLE,
+            serviceAvailable: false,
+            backendAvailable: false,
+            cameraActive: false,
+            panelIconVisible: true,
+            panelIconName: 'dialog-warning-symbolic',
+            title: 'LensGuard',
+            subtitle: 'Camera monitor service unavailable',
+            accessibleLabel: 'LensGuard camera monitor service is unavailable',
+            tooltip: 'LensGuard: camera monitor service unavailable',
+            sessions: [],
+        };
+    }
+
     const backendAvailable = snapshot.backendAvailable === true;
     const sessions = backendAvailable
         ? normalizeSessions(snapshot.sessions)
@@ -69,6 +87,7 @@ export function createViewState(snapshot = {}) {
     if (!backendAvailable) {
         return {
             status: ViewStatus.BACKEND_UNAVAILABLE,
+            serviceAvailable: true,
             backendAvailable: false,
             cameraActive: false,
             panelIconVisible: true,
@@ -84,6 +103,7 @@ export function createViewState(snapshot = {}) {
     if (!cameraActive) {
         return {
             status: ViewStatus.INACTIVE,
+            serviceAvailable: true,
             backendAvailable: true,
             cameraActive: false,
             panelIconVisible: false,
@@ -99,6 +119,7 @@ export function createViewState(snapshot = {}) {
     const count = sessions.length;
     return {
         status: ViewStatus.ACTIVE,
+        serviceAvailable: true,
         backendAvailable: true,
         cameraActive: true,
         panelIconVisible: true,

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-archive=${1:-/tmp/lensguard-step8-dist/lensguard@younesrabeh.github.io.shell-extension.zip}
+archive=${1:-dist/lensguard@younesrabeh.github.io.shell-extension.zip}
 log_file=$(mktemp --tmpdir lensguard-gnome-smoke.XXXXXX.log)
 trap 'rm -f -- "$log_file"' EXIT
 
@@ -30,4 +30,4 @@ if rg -q 'Script failed:|Failed to load extension|Extension lensguard.*: Error|E
     exit 1
 fi
 
-printf '%s\n' 'GNOME Shell mock UI smoke test passed.'
+printf '%s\n' 'GNOME Shell D-Bus UI smoke test passed.'

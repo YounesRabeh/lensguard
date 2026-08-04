@@ -30,9 +30,9 @@ for required_file in \
     metadata.json \
     extension.js \
     icons/camera-active.png \
-    schemas/org.gnome.shell.extensions.lensguard.gschema.xml \
+    src/dbusClient.js \
+    src/dbusPayload.js \
     src/indicator.js \
-    src/mockDataProvider.js \
     src/sessionModel.js; do
     if ! grep -Fxq "$required_file" <<<"$archive_entries"; then
         printf '%s\n' "extension package is missing $required_file" >&2
