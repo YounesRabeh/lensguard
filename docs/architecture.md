@@ -104,5 +104,28 @@ events over a channel. A backend failure first ends known sessions and then emit
 Direct links are the supported Step 4 topology. Graphs containing converter or portal nodes
 between the camera and application may require multi-hop correlation later. Candidate source
 classification also cannot distinguish every physical camera from virtual or screen sources.
-Application metadata is copied only from PipeWire in this step; process and desktop-entry
-enrichment belongs to Step 5.
+Application metadata enters the domain from PipeWire before the Step 5 enrichment stage described
+below.
+
+## Application identity resolution
+
+`camera-app-resolver` enriches `SessionStarted` and `SessionUpdated` events in the daemon after
+they leave the dedicated PipeWire callback thread. Resolution therefore cannot add procfs or
+desktop-file latency to native PipeWire callbacks.
+
+The resolver uses this deterministic precedence:
+
+1. trusted PipeWire application ID, display name, binary, and PID hints;
+2. a matching desktop entry's `Name`, especially when the backend name is a machine identifier;
+3. permitted `/proc/<pid>` process name and executable basename;
+4. Flatpak identity from `/proc/<pid>/root/.flatpak-info` or a recognizable cgroup unit;
+5. a normalized backend/process identifier, then `Unknown application`.
+
+Desktop entries are indexed from the standard XDG user and system `applications` directories.
+Only the desktop-file ID, `Name`, `Exec` basename, and `X-Flatpak` ID are retained. Icon paths and
+process command lines are deliberately excluded from the trust boundary. Newline and control
+characters are normalized before a fallback is displayed.
+
+Process exit and permission failures are non-fatal: the session is preserved with the best
+remaining identity. Resolutions use a bounded cache keyed by all identity inputs. Exact entries
+can be invalidated, and the complete cache can be cleared when desktop-entry state changes.

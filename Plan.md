@@ -677,40 +677,40 @@ Resolve useful application identity from PipeWire metadata and process informati
 
 ### Checklist
 
-- [ ] Prefer trusted PipeWire application metadata when present.
-- [ ] Resolve PID from PipeWire metadata where available.
-- [ ] Read permitted `/proc/<pid>` fields safely.
-- [ ] Resolve executable and process name.
-- [ ] Inspect cgroup/process metadata for sandboxed application identity when practical.
-- [ ] Resolve `.desktop` files from standard user and system locations.
-- [ ] Return application ID and display name without returning arbitrary icon file paths.
-- [ ] Define deterministic fallback display names.
-- [ ] Add a bounded cache keyed by relevant identity inputs.
-- [ ] Avoid treating process command-line content as trusted UI markup.
-- [ ] Handle exited processes and permission errors without failing the session.
-- [ ] Keep resolution off latency-sensitive PipeWire callback paths.
+- [x] Prefer trusted PipeWire application metadata when present.
+- [x] Resolve PID from PipeWire metadata where available.
+- [x] Read permitted `/proc/<pid>` fields safely.
+- [x] Resolve executable and process name.
+- [x] Inspect cgroup/process metadata for sandboxed application identity when practical.
+- [x] Resolve `.desktop` files from standard user and system locations.
+- [x] Return application ID and display name without returning arbitrary icon file paths.
+- [x] Define deterministic fallback display names.
+- [x] Add a bounded cache keyed by relevant identity inputs.
+- [x] Avoid treating process command-line content as trusted UI markup.
+- [x] Handle exited processes and permission errors without failing the session.
+- [x] Keep resolution off latency-sensitive PipeWire callback paths.
 
 ### Minimum testing requirements
 
 **Unit tests**
 
-- [ ] Metadata-only identity resolution.
-- [ ] PID and executable fallback.
-- [ ] Desktop-entry match.
-- [ ] Flatpak-style ID resolution from fixtures.
-- [ ] Missing process handling.
-- [ ] Permission-denied handling.
-- [ ] Safe fallback naming.
-- [ ] Cache hit and invalidation behavior.
+- [x] Metadata-only identity resolution.
+- [x] PID and executable fallback.
+- [x] Desktop-entry match.
+- [x] Flatpak-style ID resolution from fixtures.
+- [x] Missing process handling.
+- [x] Permission-denied handling.
+- [x] Safe fallback naming.
+- [x] Cache hit and invalidation behavior.
 
 **Integration tests**
 
-- [ ] Resolve a spawned test process.
-- [ ] Resolve desktop entries from a temporary fixture directory.
+- [x] Resolve a spawned test process.
+- [x] Resolve desktop entries from a temporary fixture directory.
 
 **Manual smoke test**
 
-- [ ] Camera session reports a recognizable application name for at least one native application.
+- [x] Camera session reports a recognizable application name for at least one native application.
 - [ ] Test one sandboxed/Flatpak application when available.
 
 ### Deliverables

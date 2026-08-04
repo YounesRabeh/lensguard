@@ -54,20 +54,25 @@ checksum = "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da"
 
 [[package]]
 name = "camera-app-resolver"
-version = "0.4.0"
+version = "0.5.0"
+dependencies = [
+ "camera-core",
+ "thiserror",
+]
 
 [[package]]
 name = "camera-core"
-version = "0.4.0"
+version = "0.5.0"
 
 [[package]]
 name = "camera-dbus"
-version = "0.4.0"
+version = "0.5.0"
 
 [[package]]
 name = "camera-monitor"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
+ "camera-app-resolver",
  "camera-core",
  "camera-pipewire",
  "tracing",
@@ -76,7 +81,7 @@ dependencies = [
 
 [[package]]
 name = "camera-pipewire"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "camera-core",
  "pipewire",

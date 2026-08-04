@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Snapshot
+Exec=snapshot
+Icon=org.gnome.Snapshot

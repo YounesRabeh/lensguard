@@ -1,7 +1,8 @@
 # Development
 
-LensGuard has completed the Step 4 `PipeWire` graph-correlation baseline. A live adapter can emit
-domain camera-session events, but application resolution, D-Bus, and UI behavior do not exist yet.
+LensGuard has completed Step 5 application identity resolution. A live adapter emits domain
+camera-session events enriched from trusted PipeWire hints, procfs, standard desktop entries, and
+Flatpak metadata. D-Bus and UI behavior do not exist yet.
 
 ## Recorded local environment
 
@@ -80,6 +81,27 @@ cargo run -p camera-monitor -- --version
 cargo run -p camera-monitor -- inspect-pipewire
 cargo run -p camera-monitor -- watch-pipewire
 ```
+
+The watcher resolves application names on the daemon consumer thread. A typical event is
+`START ... application="Snapshot" ...`; if metadata is unavailable it uses a safe process-based
+name or `Unknown application` without dropping the session.
+
+## Troubleshooting application identity
+
+- If the application remains `Unknown application`, inspect the application input node with
+  `inspect-pipewire` and check whether it exposes `application.process.id`, `application.id`,
+  `application.name`, or `application.process.binary`.
+- A process may exit before procfs is read, or sandbox permissions may deny process metadata.
+  These are expected non-fatal fallbacks.
+- Confirm the matching `.desktop` file is beneath `$XDG_DATA_HOME/applications` or an
+  `$XDG_DATA_DIRS` `applications` directory and contains a non-empty `Name`.
+- Flatpak matching uses `X-Flatpak`, `.flatpak-info`, or recognizable systemd cgroup metadata.
+  Portal topology may still prevent the application PID from being exposed.
+- Do not paste complete process command lines into reports. The resolver intentionally never
+  reads them, and it does not return desktop-entry icon file paths.
+
+See [the application-resolution smoke test](../tests/manual/application-resolution.md) for live
+verification.
 
 Step 1 intentionally has no live GNOME enable/disable test automation. To verify lifecycle
 loading manually, install the generated bundle in a disposable GNOME user session, enable and

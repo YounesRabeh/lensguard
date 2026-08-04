@@ -11,7 +11,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-camera-core = { version = "0.4.0", path = "../camera-core" }
+camera-core = { version = "0.5.0", path = "../camera-core" }
 pipewire = "0.10.0"
 thiserror = "2.0.19"
 tracing = "0.1.44"

@@ -1,5 +1,6 @@
 use std::process::ExitCode;
 
+use camera_app_resolver::{ApplicationResolver, ResolutionRequest};
 use camera_core::{CameraEventSource, MonitorEvent};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -53,17 +54,41 @@ fn watch_pipewire() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    let mut resolver = match ApplicationResolver::new(128) {
+        Ok(resolver) => resolver,
+        Err(error) => {
+            eprintln!("camera-monitor: application resolver failed to start: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
     println!("PipeWire camera relationship monitor ready; press Ctrl+C to stop");
 
     loop {
         match source.next_event() {
-            Ok(Some(event)) => print_monitor_event(&event),
+            Ok(Some(event)) => {
+                let event = resolve_application(event, &mut resolver);
+                print_monitor_event(&event);
+            }
             Ok(None) => return ExitCode::SUCCESS,
             Err(error) => {
                 eprintln!("camera-monitor: PipeWire monitor ended: {error}");
                 return ExitCode::FAILURE;
             }
         }
+    }
+}
+
+fn resolve_application(event: MonitorEvent, resolver: &mut ApplicationResolver) -> MonitorEvent {
+    match event {
+        MonitorEvent::SessionStarted(mut session) => {
+            session.application = resolver.resolve(ResolutionRequest::from(&session.application));
+            MonitorEvent::SessionStarted(session)
+        }
+        MonitorEvent::SessionUpdated(mut session) => {
+            session.application = resolver.resolve(ResolutionRequest::from(&session.application));
+            MonitorEvent::SessionUpdated(session)
+        }
+        other => other,
     }
 }
 

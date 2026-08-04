@@ -11,7 +11,8 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-camera-core = { version = "0.4.0", path = "../crates/camera-core" }
-camera-pipewire = { version = "0.4.0", path = "../crates/camera-pipewire" }
+camera-app-resolver = { version = "0.5.0", path = "../crates/camera-app-resolver" }
+camera-core = { version = "0.5.0", path = "../crates/camera-core" }
+camera-pipewire = { version = "0.5.0", path = "../crates/camera-pipewire" }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.23"

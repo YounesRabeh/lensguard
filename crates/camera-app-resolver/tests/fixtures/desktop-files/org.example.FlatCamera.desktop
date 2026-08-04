@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Flat Camera
+Exec=/usr/bin/flatpak run org.example.FlatCamera
+X-Flatpak=org.example.FlatCamera
+Icon=/tmp/untrusted.svg

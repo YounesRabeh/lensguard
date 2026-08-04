@@ -9,3 +9,7 @@ repository.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+camera-core = { version = "0.5.0", path = "../camera-core" }
+thiserror = "2.0.19"
