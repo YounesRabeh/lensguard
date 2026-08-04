@@ -13,6 +13,7 @@ use crate::backoff::BackoffPolicy;
 
 const SOURCE_POLL_INTERVAL: Duration = Duration::from_millis(100);
 const SHUTDOWN_POLL_INTERVAL: Duration = Duration::from_millis(50);
+const MAX_FAILURE_TEXT_CHARS: usize = 512;
 
 /// Pollable event source used by the blocking backend supervisor.
 pub trait BackendSource: Send {
@@ -101,6 +102,7 @@ where
                 source
             }
             Err(error) => {
+                let error = bounded_failure_text(&error.to_string());
                 let reason = format!("PipeWire backend connection failed: {error}");
                 warn!(attempt, %error, "PipeWire backend unavailable; retrying");
                 if !send(
@@ -131,6 +133,7 @@ where
                 }
                 Ok(None) => {}
                 Err(error) => {
+                    let error = bounded_failure_text(&error.to_string());
                     let reason = format!("PipeWire backend disconnected: {error}");
                     warn!(%error, "PipeWire backend disconnected; reconciling and retrying");
                     if !send(
@@ -160,6 +163,10 @@ fn send_failure_exit(shutdown: &AtomicBool) -> SupervisorExit {
     }
 }
 
+fn bounded_failure_text(value: &str) -> String {
+    value.chars().take(MAX_FAILURE_TEXT_CHARS).collect()
+}
+
 fn send(events: &mpsc::Sender<MonitorEvent>, shutdown: &AtomicBool, event: MonitorEvent) -> bool {
     if shutdown.load(Ordering::Acquire) {
         return false;
@@ -181,4 +188,15 @@ fn wait_for_shutdown(shutdown: &AtomicBool, duration: Duration) -> bool {
         thread::sleep(remaining.min(SHUTDOWN_POLL_INTERVAL));
     }
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MAX_FAILURE_TEXT_CHARS, bounded_failure_text};
+
+    #[test]
+    fn externally_supplied_failure_text_is_bounded_without_invalid_utf8() {
+        let bounded = bounded_failure_text(&"📷".repeat(10_000));
+        assert_eq!(bounded.chars().count(), MAX_FAILURE_TEXT_CHARS);
+    }
 }

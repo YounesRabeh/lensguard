@@ -146,6 +146,19 @@ assertEqual(states.at(-1).sessions.length, 0,
 assertEqual(proxy.disconnectCount, 2,
     'service disappearance disconnects proxy subscriptions');
 
+for (let cycle = 0; cycle < 25; cycle++) {
+    const expectedCalls = proxy.callCount + 1;
+    appearedCallback({}, 'io.github.younesrabeh.CameraMonitor',
+        `:1.reconnect-${cycle}`);
+    await waitFor(() => proxy.callCount === expectedCalls,
+        `reconnect ${cycle + 1} did not synchronize`);
+    vanishedCallback();
+    assertEqual(proxy._handlers.size, 0,
+        `reconnect ${cycle + 1} leaked proxy subscriptions`);
+}
+assertEqual(proxy.disconnectCount, 52,
+    'each service generation disconnects both subscriptions');
+
 client.stop();
 client.stop();
 assertEqual(unwatchCount, 1, 'stop returns the name watch exactly once');

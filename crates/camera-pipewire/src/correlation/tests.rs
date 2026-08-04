@@ -302,3 +302,194 @@ fn sanitized_session_fixture_drives_a_complete_lifecycle() {
     assert_eq!(session.application.display_name, "Fixture Camera App");
     assert_eq!(session.device.display_name, "Fixture USB Camera");
 }
+
+#[test]
+fn out_of_order_registry_events_reconcile_when_graph_becomes_complete() {
+    let mut engine = CorrelationEngine::new();
+    let events = apply_all(
+        &mut engine,
+        [
+            link(50, 10, 11, 20, 21),
+            port(21, 20, "in", "video/x-raw"),
+            node(20, "Stream/Input/Video", "Camera App"),
+            port(11, 10, "out", "video/x-raw"),
+            node(10, "Video/Source", "Integrated Camera"),
+        ],
+        1_000,
+    );
+
+    assert_eq!(events.len(), 1);
+    assert!(matches!(events[0], MonitorEvent::SessionStarted(_)));
+}
+
+#[test]
+fn camera_unplug_stops_capture_before_late_link_cleanup() {
+    let mut engine = CorrelationEngine::new();
+    let start = apply_all(&mut engine, one_relationship(), 1_000);
+    let id = started(&start[0]).id.clone();
+
+    assert_eq!(
+        engine
+            .apply(RegistryEvent::GlobalRemoved { id: 10 }, 2_000)
+            .unwrap(),
+        [MonitorEvent::SessionStopped(id)]
+    );
+    assert!(
+        engine
+            .apply(RegistryEvent::GlobalRemoved { id: 50 }, 3_000)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn replug_changed_raw_ids_preserves_stable_device_identity() {
+    let mut engine = CorrelationEngine::new();
+    let mut first_graph = one_relationship();
+    first_graph.insert(
+        1,
+        RegistryEvent::NodePropertiesChanged {
+            id: 10,
+            properties: properties(&[("node.name", "v4l2-stable-camera")]),
+        },
+    );
+    let first = apply_all(&mut engine, first_graph, 1_000);
+    let first = started(&first[0]).clone();
+    engine
+        .apply(RegistryEvent::GlobalRemoved { id: 10 }, 2_000)
+        .unwrap();
+
+    let second = apply_all(
+        &mut engine,
+        [
+            node(30, "Video/Source", "Integrated Camera"),
+            RegistryEvent::NodePropertiesChanged {
+                id: 30,
+                properties: properties(&[("node.name", "v4l2-stable-camera")]),
+            },
+            port(31, 30, "out", "video/x-raw"),
+            node(40, "Stream/Input/Video", "Camera App"),
+            port(41, 40, "in", "video/x-raw"),
+            link(60, 30, 31, 40, 41),
+        ],
+        3_000,
+    );
+    let second = started(&second[0]);
+
+    assert_eq!(second.device.id, first.device.id);
+    assert_ne!(second.id, first.id);
+}
+
+#[test]
+fn identical_camera_names_remain_distinct_devices() {
+    let mut engine = CorrelationEngine::new();
+    let mut events = one_relationship();
+    events.insert(
+        1,
+        RegistryEvent::NodePropertiesChanged {
+            id: 10,
+            properties: properties(&[
+                ("node.name", "camera-node-a"),
+                ("device.name", "identical-model"),
+            ]),
+        },
+    );
+    events.extend([
+        node(30, "Video/Source", "Integrated Camera"),
+        RegistryEvent::NodePropertiesChanged {
+            id: 30,
+            properties: properties(&[
+                ("node.name", "camera-node-b"),
+                ("device.name", "identical-model"),
+            ]),
+        },
+        port(31, 30, "out", "video/x-raw"),
+        link(51, 30, 31, 20, 21),
+    ]);
+    let starts = apply_all(&mut engine, events, 1_000);
+    let sessions: Vec<_> = starts.iter().map(started).collect();
+
+    assert_eq!(sessions.len(), 2);
+    assert_eq!(
+        sessions[0].device.display_name,
+        sessions[1].device.display_name
+    );
+    assert_ne!(sessions[0].device.id, sessions[1].device.id);
+}
+
+#[test]
+fn two_processes_from_same_desktop_app_remain_distinct_sessions() {
+    let mut engine = CorrelationEngine::new();
+    let mut events = one_relationship();
+    events.extend([
+        RegistryEvent::NodePropertiesChanged {
+            id: 20,
+            properties: properties(&[
+                ("application.id", "org.example.Camera"),
+                ("application.process.id", "1001"),
+            ]),
+        },
+        node(30, "Stream/Input/Video", "Camera App"),
+        RegistryEvent::NodePropertiesChanged {
+            id: 30,
+            properties: properties(&[
+                ("application.id", "org.example.Camera"),
+                ("application.process.id", "1002"),
+            ]),
+        },
+        port(31, 30, "in", "video/x-raw"),
+        link(51, 10, 11, 30, 31),
+    ]);
+    let starts = apply_all(&mut engine, events, 1_000);
+    let sessions: Vec<_> = starts
+        .iter()
+        .filter_map(|event| match event {
+            MonitorEvent::SessionStarted(session) => Some(session),
+            MonitorEvent::SessionUpdated(_)
+            | MonitorEvent::SessionStopped(_)
+            | MonitorEvent::BackendUnavailable { .. }
+            | MonitorEvent::BackendRecovered => None,
+        })
+        .collect();
+
+    assert_eq!(engine.active_sessions().len(), 2);
+    assert_eq!(sessions.last().unwrap().application.pid, Some(1002));
+    assert_eq!(
+        sessions.last().unwrap().application.app_id.as_deref(),
+        Some("org.example.Camera")
+    );
+}
+
+#[test]
+fn two_cameras_and_two_applications_have_four_independent_relationships() {
+    let mut engine = CorrelationEngine::new();
+    let events = [
+        node(10, "Video/Source", "Camera A"),
+        port(11, 10, "out", "video/x-raw"),
+        node(20, "Video/Source", "Camera B"),
+        port(21, 20, "out", "video/x-raw"),
+        node(30, "Stream/Input/Video", "App A"),
+        port(31, 30, "in", "video/x-raw"),
+        node(40, "Stream/Input/Video", "App B"),
+        port(41, 40, "in", "video/x-raw"),
+        link(50, 10, 11, 30, 31),
+        link(51, 10, 11, 40, 41),
+        link(52, 20, 21, 30, 31),
+        link(53, 20, 21, 40, 41),
+    ];
+
+    assert_eq!(apply_all(&mut engine, events, 1_000).len(), 4);
+    assert_eq!(engine.active_sessions().len(), 4);
+}
+
+#[test]
+fn malformed_relationship_metadata_is_rejected_without_poisoning_engine() {
+    let mut engine = CorrelationEngine::new();
+    let malformed = RegistryEvent::GlobalAdded {
+        id: 50,
+        kind: RegistryObjectKind::Link,
+        properties: properties(&[("link.output.node", "not-a-number")]),
+    };
+    assert!(engine.apply(malformed, 1_000).is_err());
+    assert_eq!(apply_all(&mut engine, one_relationship(), 2_000).len(), 1);
+}

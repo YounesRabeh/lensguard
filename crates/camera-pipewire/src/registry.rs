@@ -36,6 +36,7 @@ pub fn inspect_pipewire() -> Result<RawGraph, PipeWireError> {
     run_initial_synchronization(&main_loop, &core, &callback_error)?;
 
     drop(observation);
+    drop(on_event);
     Rc::try_unwrap(graph)
         .map(RefCell::into_inner)
         .map_err(|_| PipeWireError::Core {

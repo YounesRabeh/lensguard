@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::fs;
 use std::io::{BufRead, BufReader};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -23,6 +24,8 @@ use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 use tokio::time::timeout;
 use zbus::{Connection, Proxy, connection};
+
+static DBUS_TEST_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Clone, Debug, Error)]
 #[error("{0}")]
@@ -261,8 +264,43 @@ async fn wait_session_name(client: &Proxy<'_>, expected: &str) {
     .unwrap();
 }
 
+async fn wait_session_ids(client: &Proxy<'_>, expected: &[&str]) {
+    timeout(Duration::from_secs(2), async {
+        loop {
+            let sessions: Vec<SessionDto> = client.call("GetActiveSessions", &()).await.unwrap();
+            let ids: Vec<_> = sessions
+                .iter()
+                .map(|session| session.session_id.as_str())
+                .collect();
+            if ids == expected {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+}
+
+fn process_task_count() -> usize {
+    fs::read_dir("/proc/self/task").unwrap().count()
+}
+
+fn process_rss_kib() -> usize {
+    fs::read_to_string("/proc/self/status")
+        .unwrap()
+        .lines()
+        .find_map(|line| line.strip_prefix("VmRSS:"))
+        .and_then(|value| value.split_whitespace().next())
+        .unwrap()
+        .parse()
+        .unwrap()
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[allow(clippy::await_holding_lock)]
 async fn fake_backend_start_update_and_stop_reach_dbus() {
+    let _dbus_test = DBUS_TEST_LOCK.lock().unwrap();
     let bus = TestBus::start();
     let pipeline = start_pipeline(&bus, initializing_state(), Duration::ZERO).await;
     let client_connection = bus.connect().await;
@@ -302,7 +340,9 @@ async fn fake_backend_start_update_and_stop_reach_dbus() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[allow(clippy::await_holding_lock)]
 async fn backend_failure_clears_stale_sessions_and_updates_availability() {
+    let _dbus_test = DBUS_TEST_LOCK.lock().unwrap();
     let bus = TestBus::start();
     let pipeline = start_pipeline(&bus, initializing_state(), Duration::ZERO).await;
     let client_connection = bus.connect().await;
@@ -334,7 +374,9 @@ async fn backend_failure_clears_stale_sessions_and_updates_availability() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn backend_recovery_reconnects_and_restores_observation() {
+#[allow(clippy::await_holding_lock)]
+async fn reconnect_snapshot_replaces_state_after_a_missed_remove() {
+    let _dbus_test = DBUS_TEST_LOCK.lock().unwrap();
     let bus = TestBus::start();
     let pipeline = start_pipeline(&bus, initializing_state(), Duration::ZERO).await;
     let client_connection = bus.connect().await;
@@ -366,8 +408,14 @@ async fn backend_recovery_reconnects_and_restores_observation() {
             "Recovered Camera",
         ))))
         .unwrap();
+    second
+        .send(Ok(MonitorEvent::SessionStarted(session(
+            "third",
+            "Snapshot Camera",
+        ))))
+        .unwrap();
     wait_property(&client, "Active", true).await;
-    wait_session_name(&client, "Recovered Camera").await;
+    wait_session_ids(&client, &["second", "third"]).await;
 
     shutdown.store(true, Ordering::Release);
     assert_eq!(
@@ -377,6 +425,34 @@ async fn backend_recovery_reconnects_and_restores_observation() {
             .unwrap(),
         SupervisorExit::Shutdown
     );
+    stop_pipeline(pipeline).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[allow(clippy::await_holding_lock)]
+async fn application_exit_before_pipewire_cleanup_keeps_privacy_state_active() {
+    let _dbus_test = DBUS_TEST_LOCK.lock().unwrap();
+    let bus = TestBus::start();
+    let pipeline = start_pipeline(&bus, initializing_state(), Duration::ZERO).await;
+    let client_connection = bus.connect().await;
+    let client = proxy(&client_connection).await;
+    let exiting = session("exited-app", "Exited camera process");
+
+    pipeline
+        .input
+        .send(MonitorEvent::SessionStarted(exiting.clone()))
+        .await
+        .unwrap();
+    wait_property(&client, "Active", true).await;
+    tokio::time::sleep(Duration::from_millis(75)).await;
+    assert!(client.get_property::<bool>("Active").await.unwrap());
+
+    pipeline
+        .input
+        .send(MonitorEvent::SessionStopped(exiting.id))
+        .await
+        .unwrap();
+    wait_property(&client, "Active", false).await;
     stop_pipeline(pipeline).await;
 }
 
@@ -456,4 +532,58 @@ async fn idle_backend_shutdown_completes_within_a_bounded_duration() {
         .unwrap();
     assert_eq!(exit, SupervisorExit::Shutdown);
     assert!(started.elapsed() < Duration::from_secs(1));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[allow(clippy::await_holding_lock)]
+async fn repeated_session_churn_keeps_memory_and_task_counts_bounded() {
+    const CHURN_CYCLES: usize = 2_000;
+
+    let _dbus_test = DBUS_TEST_LOCK.lock().unwrap();
+    let bus = TestBus::start();
+    let tasks_before = process_task_count();
+    let rss_before = process_rss_kib();
+    let pipeline = start_pipeline(&bus, initializing_state(), Duration::ZERO).await;
+    let client_connection = bus.connect().await;
+    let client = proxy(&client_connection).await;
+
+    for index in 0..CHURN_CYCLES {
+        let transient = session(&format!("churn-{index}"), "Churn Camera");
+        pipeline
+            .input
+            .send(MonitorEvent::SessionStarted(transient.clone()))
+            .await
+            .unwrap();
+        pipeline
+            .input
+            .send(MonitorEvent::SessionStopped(transient.id))
+            .await
+            .unwrap();
+    }
+    let sentinel = session("churn-sentinel", "Churn Sentinel");
+    pipeline
+        .input
+        .send(MonitorEvent::SessionStarted(sentinel.clone()))
+        .await
+        .unwrap();
+    wait_property(&client, "Active", true).await;
+    pipeline
+        .input
+        .send(MonitorEvent::SessionStopped(sentinel.id))
+        .await
+        .unwrap();
+    wait_property(&client, "Active", false).await;
+    stop_pipeline(pipeline).await;
+    tokio::time::sleep(Duration::from_millis(50)).await;
+
+    let task_growth = process_task_count().saturating_sub(tasks_before);
+    let rss_growth_kib = process_rss_kib().saturating_sub(rss_before);
+    eprintln!(
+        "LENSGUARD_LONGEVITY cycles={CHURN_CYCLES} task_growth={task_growth} rss_growth_kib={rss_growth_kib}"
+    );
+    assert!(task_growth <= 3, "task count grew by {task_growth}");
+    assert!(
+        rss_growth_kib <= 32 * 1_024,
+        "resident memory grew by {rss_growth_kib} KiB"
+    );
 }

@@ -185,7 +185,7 @@ impl CorrelationEngine {
         ]);
         let device_identity = property(
             &camera.properties,
-            &["device.serial", "device.name", "object.serial", "node.name"],
+            &["device.serial", "node.name", "device.name", "object.serial"],
         )
         .map_or_else(
             || {

@@ -76,3 +76,28 @@ Compare `inspect-pipewire` output with `pw-dump`. Step 4 requires a direct compl
 session-manager policies insert intermediate processing nodes; those multi-hop layouts are a
 known limitation at this stage. Missing port ownership or direction metadata also keeps a
 relationship unclassified rather than risking a false positive.
+
+## Known limitations and ambiguous graph cases
+
+LensGuard reports one row per active **camera-device to PipeWire application-node relationship**.
+It intentionally does not merge rows by desktop application: two processes from the same app are
+two rows, and one process using two cameras is also two rows. This preserves the privacy-relevant
+device relationship even when application metadata is identical or incomplete.
+
+Detection is currently limited to complete, direct PipeWire links from a `Video/Source` output to
+a `Stream/Input/Video` input. Applications that bypass PipeWire and open `/dev/video*` directly
+are outside the MVP and cannot be reported. Intermediate filters, virtual-camera chains,
+session-manager-specific graph layouts, and portal graphs without the required ownership and
+direction metadata can also be ambiguous and are ignored instead of guessed.
+
+Device identity prefers a hardware serial, device name, or stable PipeWire node name. Two cameras
+with the same display label still remain separate while their raw nodes are distinct, but a device
+that exposes none of those stable properties may receive a new identifier after unplug/replug.
+Application names may fall back to PipeWire metadata when a process exits early, `/proc` is hidden,
+desktop-entry lookup times out, or sandbox metadata is absent. These fallbacks do not suppress the
+active-camera warning.
+
+Malformed numeric graph references are rejected and logged; oversized and unrelated properties
+are not retained. A backend disconnect clears its complete prior snapshot and marks monitoring
+unavailable before a fresh snapshot is accepted, so loss of observation is never presented as a
+confident inactive state.

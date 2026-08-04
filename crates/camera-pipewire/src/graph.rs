@@ -8,6 +8,33 @@ use crate::MappingError;
 /// Owned `PipeWire` properties safe to retain after a registry callback returns.
 pub type PropertyMap = BTreeMap<String, String>;
 
+/// Maximum number of Unicode scalar values retained from one external property value.
+pub const MAX_PROPERTY_VALUE_CHARS: usize = 512;
+
+const RETAINED_PROPERTY_KEYS: &[&str] = &[
+    "application.id",
+    "application.name",
+    "application.process.binary",
+    "application.process.id",
+    "device.name",
+    "device.serial",
+    "format.dsp",
+    "link.input.node",
+    "link.input.port",
+    "link.output.node",
+    "link.output.port",
+    "media.class",
+    "media.name",
+    "media.type",
+    "node.description",
+    "node.id",
+    "node.name",
+    "node.nick",
+    "object.serial",
+    "pipewire.access.portal.app_id",
+    "port.direction",
+];
+
 /// Adapter-owned kinds of registry globals relevant to camera graph discovery.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RegistryObjectKind {
@@ -205,19 +232,25 @@ impl RawGraph {
                 kind,
                 properties,
             } => match kind {
-                RegistryObjectKind::Node => Ok(self.upsert_node(id, properties)),
-                RegistryObjectKind::Port => self.upsert_port(id, None, properties),
-                RegistryObjectKind::Link => self.upsert_link_from_properties(id, properties),
+                RegistryObjectKind::Node => {
+                    Ok(self.upsert_node(id, bounded_properties(properties)))
+                }
+                RegistryObjectKind::Port => {
+                    self.upsert_port(id, None, bounded_properties(properties))
+                }
+                RegistryObjectKind::Link => {
+                    self.upsert_link_from_properties(id, bounded_properties(properties))
+                }
                 RegistryObjectKind::Other(_) => Ok(false),
             },
             RegistryEvent::NodePropertiesChanged { id, properties } => {
-                Ok(self.upsert_node(id, properties))
+                Ok(self.upsert_node(id, bounded_properties(properties)))
             }
             RegistryEvent::PortPropertiesChanged {
                 id,
                 direction,
                 properties,
-            } => self.upsert_port(id, Some(direction), properties),
+            } => self.upsert_port(id, Some(direction), bounded_properties(properties)),
             RegistryEvent::LinkPropertiesChanged {
                 id,
                 output_node_id,
@@ -233,7 +266,7 @@ impl RawGraph {
                     input_node: Some(input_node_id),
                     input_port: Some(input_port_id),
                 },
-                properties,
+                bounded_properties(properties),
             )),
             RegistryEvent::GlobalRemoved { id } => Ok(self.remove(id)),
         }
@@ -408,6 +441,17 @@ impl RawGraph {
         }
         false
     }
+}
+
+fn bounded_properties(properties: PropertyMap) -> PropertyMap {
+    properties
+        .into_iter()
+        .filter(|(key, _)| RETAINED_PROPERTY_KEYS.contains(&key.as_str()))
+        .map(|(key, value)| {
+            let value = value.chars().take(MAX_PROPERTY_VALUE_CHARS).collect();
+            (key, value)
+        })
+        .collect()
 }
 
 impl Display for RawGraph {
@@ -651,6 +695,30 @@ mod tests {
             })
         );
         assert_eq!(graph.link(50), None);
+    }
+
+    #[test]
+    fn retained_metadata_is_allowlisted_and_bounded() {
+        let mut graph = RawGraph::new();
+        graph
+            .apply(RegistryEvent::GlobalAdded {
+                id: 10,
+                kind: RegistryObjectKind::Node,
+                properties: properties(&[
+                    ("media.class", "Video/Source"),
+                    ("node.description", &"camera📷".repeat(1_000)),
+                    ("untrusted.large.property", &"x".repeat(10_000)),
+                ]),
+            })
+            .unwrap();
+
+        let retained = &graph.node(10).unwrap().properties;
+        assert_eq!(retained["node.description"].chars().count(), 512);
+        assert!(!retained.contains_key("untrusted.large.property"));
+        assert_eq!(
+            graph.node(10).unwrap().classification(),
+            NodeClassification::CameraSourceCandidate
+        );
     }
 
     #[test]

@@ -6,6 +6,7 @@ use camera_core::ApplicationIdentity;
 use crate::{DesktopEntryIndex, ProcessSnapshot, ProcessSource, ProcfsReader, ResolverError};
 
 const UNKNOWN_APPLICATION: &str = "Unknown application";
+const MAX_IDENTITY_TEXT_CHARS: usize = 256;
 
 /// Backend and process hints used to resolve a human-readable application identity.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -194,7 +195,7 @@ impl ApplicationResolver {
 fn plain_text(value: &str) -> Option<String> {
     let mut normalized = String::with_capacity(value.len());
     let mut previous_was_space = false;
-    for character in value.trim().chars() {
+    for character in value.trim().chars().take(MAX_IDENTITY_TEXT_CHARS) {
         let character = if character.is_control() {
             ' '
         } else {
@@ -404,5 +405,27 @@ mod tests {
         third.pid = Some(4244);
         resolver.resolve(third);
         assert_eq!(resolver.cache_len(), 2);
+    }
+
+    #[test]
+    fn cache_and_external_identity_text_remain_bounded_under_churn() {
+        let mut resolver = ApplicationResolver::with_sources(
+            StubProcessSource::missing(),
+            DesktopEntryIndex::default(),
+            8,
+        )
+        .unwrap();
+
+        for pid in 1..=1_000 {
+            let identity = resolver.resolve(ResolutionRequest {
+                pid: Some(pid),
+                app_id: None,
+                metadata_display_name: Some(format!("{pid}-{}", "📷".repeat(1_000))),
+                binary: None,
+            });
+            assert!(identity.display_name.chars().count() <= 256);
+        }
+
+        assert_eq!(resolver.cache_len(), 8);
     }
 }

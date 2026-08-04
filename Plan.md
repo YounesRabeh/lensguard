@@ -1059,41 +1059,41 @@ Harden the system against real-world race conditions, restarts, malformed metada
 
 ### Checklist
 
-- [ ] Reconcile a complete backend snapshot after reconnect.
-- [ ] Prevent stale sessions after missed remove events.
-- [ ] Handle application exit before PipeWire cleanup.
-- [ ] Handle camera unplug during active capture.
-- [ ] Handle camera replug with changed PipeWire IDs.
-- [ ] Handle two cameras with identical display names.
-- [ ] Handle two processes belonging to the same desktop application.
-- [ ] Define whether sessions are grouped in UI by process, application, or device.
-- [ ] Cap logs and in-memory caches.
-- [ ] Check for leaked D-Bus subscriptions and GNOME objects.
-- [ ] Add timeout boundaries around external metadata resolution.
-- [ ] Confirm malformed metadata cannot crash either component.
-- [ ] Document unsupported or ambiguous graph cases.
+- [x] Reconcile a complete backend snapshot after reconnect.
+- [x] Prevent stale sessions after missed remove events.
+- [x] Handle application exit before PipeWire cleanup.
+- [x] Handle camera unplug during active capture.
+- [x] Handle camera replug with changed PipeWire IDs.
+- [x] Handle two cameras with identical display names.
+- [x] Handle two processes belonging to the same desktop application.
+- [x] Define whether sessions are grouped in UI by process, application, or device.
+- [x] Cap logs and in-memory caches.
+- [x] Check for leaked D-Bus subscriptions and GNOME objects.
+- [x] Add timeout boundaries around external metadata resolution.
+- [x] Confirm malformed metadata cannot crash either component.
+- [x] Document unsupported or ambiguous graph cases.
 
 ### Minimum testing requirements
 
 **Fault-injection integration tests**
 
-- [ ] Out-of-order events.
-- [ ] Duplicate events.
-- [ ] Missed event followed by snapshot reconciliation.
-- [ ] Backend disconnect during active session.
-- [ ] Resolver timeout.
-- [ ] D-Bus client disconnect and reconnect.
+- [x] Out-of-order events.
+- [x] Duplicate events.
+- [x] Missed event followed by snapshot reconciliation.
+- [x] Backend disconnect during active session.
+- [x] Resolver timeout.
+- [x] D-Bus client disconnect and reconnect.
 
 **Multi-device tests**
 
-- [ ] Two cameras, one application.
-- [ ] One camera, two applications.
-- [ ] Two cameras, two applications.
+- [x] Two cameras, one application.
+- [x] One camera, two applications.
+- [x] Two cameras, two applications.
 
 **Longevity smoke test**
 
-- [ ] Run the daemon for an extended test period while repeatedly starting and stopping camera applications.
-- [ ] Verify memory and task counts remain stable enough for a user-session daemon.
+- [x] Run the daemon for an extended test period while repeatedly starting and stopping camera applications.
+- [x] Verify memory and task counts remain stable enough for a user-session daemon.
 
 ### Deliverables
 

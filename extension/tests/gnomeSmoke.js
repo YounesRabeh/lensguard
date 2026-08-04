@@ -194,7 +194,7 @@ export async function run() {
                 'Firefox (Google Meet) — USB Webcam',
         'daemon restart did not resynchronize the session list');
 
-        for (let cycle = 0; cycle < 3; cycle++) {
+        for (let cycle = 0; cycle < 12; cycle++) {
             assert(Main.extensionManager.disableExtension(UUID),
                 `disable failed in lifecycle cycle ${cycle + 1}`);
             await waitFor(() => indicators().length === 0,
