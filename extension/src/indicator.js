@@ -46,7 +46,9 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
         this._sessionSection.removeAll();
         if (state.status === 'service-unavailable') {
             this._addInformationItem(
-                'The LensGuard camera monitor service is not running.');
+                state.backendWarningVisible
+                    ? 'The LensGuard camera monitor service is not running.'
+                    : 'Camera status is currently unavailable.');
             return;
         }
 

@@ -1,8 +1,9 @@
 {
   "uuid": "lensguard@younesrabeh.github.io",
-  "name": "LensGuard",
+  "name": "Lens Guard",
   "description": "Shows active camera applications in GNOME Shell.",
   "shell-version": ["50"],
   "version": 1,
+  "version-name": "1.2.1",
   "settings-schema": "org.gnome.shell.extensions.lensguard"
 }

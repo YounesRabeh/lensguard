@@ -52,6 +52,16 @@ assert(!hiddenFailure.panelIconVisible,
 assert(hiddenFailure.backendWarningVisible,
     'hiding the panel icon does not erase the menu warning');
 
+const serviceFailure = createViewState({serviceAvailable: false});
+const quietServiceFailure = applyPreferencesToViewState(serviceFailure, {
+    showBackendUnavailableWarning: false,
+    showIndicatorDuringBackendFailure: true,
+});
+assert(!quietServiceFailure.backendWarningVisible,
+    'warning preference also applies when the daemon service is absent');
+assertEqual(quietServiceFailure.panelIconName, 'dialog-information-symbolic',
+    'service absence uses a neutral icon when warnings are disabled');
+
 const active = createViewState({
     backendAvailable: true,
     sessions: [{

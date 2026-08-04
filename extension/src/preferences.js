@@ -31,7 +31,9 @@ export function readPreferences(settings) {
 
 export function applyPreferencesToViewState(state, values = {}) {
     const preferences = normalizePreferences(values);
-    if (state.status !== 'backend-unavailable')
+    const monitoringFailure = state.status === 'backend-unavailable' ||
+        state.status === 'service-unavailable';
+    if (!monitoringFailure)
         return state;
 
     if (preferences.showBackendUnavailableWarning) {

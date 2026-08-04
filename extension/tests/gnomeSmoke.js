@@ -90,6 +90,20 @@ export async function run() {
             'The LensGuard camera monitor service is not running.',
         'missing service menu message is not useful');
 
+        settings.set_boolean('show-backend-unavailable-warning', false);
+        await waitFor(() =>
+            indicator()._statusIcon.icon_name ===
+                'dialog-information-symbolic',
+        'warning preference did not apply while the service was absent');
+        assert(sessionLabels(indicator())[0] ===
+            'Camera status is currently unavailable.',
+        'service-absence warning preference did not update the menu');
+        settings.set_boolean('show-backend-unavailable-warning', true);
+        await waitFor(() =>
+            indicator()._statusIcon.icon_name ===
+                'dialog-warning-symbolic',
+        'warning preference did not restore while the service was absent');
+
         await service.start();
         await waitFor(() => indicator()._toggle.subtitle === 'No camera in use',
             'initial empty D-Bus snapshot did not render inactive state');

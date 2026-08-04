@@ -26,7 +26,10 @@ function defaultWatchName(onAppeared, onVanished) {
     return Gio.bus_watch_name(
         Gio.BusType.SESSION,
         SERVICE_NAME,
-        Gio.BusNameWatcherFlags.NONE,
+        // The user service is on-demand activated through its D-Bus
+        // .service file.  Request activation when we begin watching so a
+        // fresh installation does not remain stuck in service-unavailable.
+        Gio.BusNameWatcherFlags.AUTO_START,
         onAppeared,
         onVanished);
 }

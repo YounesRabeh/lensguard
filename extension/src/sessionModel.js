@@ -92,6 +92,7 @@ export function createViewState(snapshot = {}) {
             cameraActive: false,
             panelIconVisible: true,
             panelIconName: 'dialog-warning-symbolic',
+            backendWarningVisible: true,
             title: 'LensGuard',
             subtitle: 'Camera monitor service unavailable',
             accessibleLabel: 'LensGuard camera monitor service is unavailable',

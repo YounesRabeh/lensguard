@@ -1229,7 +1229,7 @@ Produce reproducible artifacts for the GNOME extension and Fedora-oriented daemo
 
 ---
 
-## Step 14 — Final Hardening, Documentation, and v1.0 Release
+## Step 14 — Final Hardening, Documentation, Release
 
 ### Goal
 
