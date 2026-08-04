@@ -70,12 +70,20 @@ const active = createViewState({
         cameraName: 'Integrated Camera',
     }],
 });
+const hiddenPanel = applyPreferencesToViewState(active, {
+    showPanelIndicator: false,
+});
+assert(!hiddenPanel.panelIconVisible,
+    'panel preference hides the icon while retaining active camera state');
+assert(hiddenPanel.cameraActive,
+    'hiding the panel icon does not clear camera activity');
 assert(applyPreferencesToViewState(active, {
     showBackendUnavailableWarning: false,
     showIndicatorDuringBackendFailure: false,
 }) === active, 'backend preferences do not alter active camera state');
 
 const values = new Map([
+    [PreferenceKey.SHOW_PANEL_INDICATOR, false],
     [PreferenceKey.SHOW_BACKEND_UNAVAILABLE_WARNING, false],
     [PreferenceKey.SHOW_INDICATOR_DURING_BACKEND_FAILURE, true],
 ]);
@@ -84,6 +92,8 @@ const loaded = readPreferences({
         return values.get(key);
     },
 });
+assertEqual(loaded.showPanelIndicator, false,
+    'panel indicator preference is read from settings');
 assertEqual(loaded.showBackendUnavailableWarning, false,
     'warning preference is read from settings');
 assertEqual(loaded.showIndicatorDuringBackendFailure, true,

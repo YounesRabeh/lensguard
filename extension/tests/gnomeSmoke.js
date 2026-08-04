@@ -74,6 +74,7 @@ export async function run() {
             'loaded extension did not retain its GSettings instance');
         settings.reset('show-backend-unavailable-warning');
         settings.reset('show-indicator-during-backend-failure');
+        settings.reset('show-panel-indicator');
         const preferencesItem = indicator()._toggle.menu
             ._getMenuItems()
             .find(item => item.name === 'lensguard-preferences');
@@ -113,6 +114,15 @@ export async function run() {
         service.startSession(discord);
         await waitFor(() => indicator()._statusIcon.visible,
             'D-Bus start event did not show the top-bar icon');
+
+        settings.set_boolean('show-panel-indicator', false);
+        await waitFor(() => !indicator()._statusIcon.visible,
+            'panel icon preference did not hide the active-camera icon');
+        assert(indicator()._toggle.subtitle === 'Camera in use',
+            'hiding the panel icon incorrectly changed the Quick Settings state');
+        settings.set_boolean('show-panel-indicator', true);
+        await waitFor(() => indicator()._statusIcon.visible,
+            'panel icon preference did not restore the active-camera icon');
         let labels = sessionLabels(indicator());
         assert(labels.length === 1, 'one-session D-Bus menu did not render one item');
         assert(labels[0] === 'Discord — Integrated Camera',
@@ -229,6 +239,7 @@ export async function run() {
     } finally {
         settings?.reset('show-backend-unavailable-warning');
         settings?.reset('show-indicator-during-backend-failure');
+        settings?.reset('show-panel-indicator');
         service.stop();
     }
 }

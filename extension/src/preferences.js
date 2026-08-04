@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: MIT
 
 export const PreferenceKey = Object.freeze({
+    SHOW_PANEL_INDICATOR: 'show-panel-indicator',
     SHOW_BACKEND_UNAVAILABLE_WARNING: 'show-backend-unavailable-warning',
     SHOW_INDICATOR_DURING_BACKEND_FAILURE:
         'show-indicator-during-backend-failure',
 });
 
 export const DEFAULT_PREFERENCES = Object.freeze({
+    showPanelIndicator: true,
     showBackendUnavailableWarning: true,
     showIndicatorDuringBackendFailure: true,
 });
 
 export function normalizePreferences(values = {}) {
     return {
+        showPanelIndicator: values.showPanelIndicator !== false,
         showBackendUnavailableWarning:
             values.showBackendUnavailableWarning !== false,
         showIndicatorDuringBackendFailure:
@@ -22,6 +25,8 @@ export function normalizePreferences(values = {}) {
 
 export function readPreferences(settings) {
     return normalizePreferences({
+        showPanelIndicator: settings.get_boolean(
+            PreferenceKey.SHOW_PANEL_INDICATOR),
         showBackendUnavailableWarning: settings.get_boolean(
             PreferenceKey.SHOW_BACKEND_UNAVAILABLE_WARNING),
         showIndicatorDuringBackendFailure: settings.get_boolean(
@@ -31,24 +36,30 @@ export function readPreferences(settings) {
 
 export function applyPreferencesToViewState(state, values = {}) {
     const preferences = normalizePreferences(values);
+    const hidePanelIndicator = !preferences.showPanelIndicator;
     const monitoringFailure = state.status === 'backend-unavailable' ||
         state.status === 'service-unavailable';
-    if (!monitoringFailure)
-        return state;
+    if (!monitoringFailure) {
+        if (!hidePanelIndicator)
+            return state;
+        return {...state, panelIconVisible: false};
+    }
 
     if (preferences.showBackendUnavailableWarning) {
         return {
             ...state,
             backendWarningVisible: true,
             panelIconVisible:
-                preferences.showIndicatorDuringBackendFailure,
+                preferences.showIndicatorDuringBackendFailure &&
+                !hidePanelIndicator,
         };
     }
 
     return {
         ...state,
         backendWarningVisible: false,
-        panelIconVisible: preferences.showIndicatorDuringBackendFailure,
+        panelIconVisible: preferences.showIndicatorDuringBackendFailure &&
+            !hidePanelIndicator,
         panelIconName: 'dialog-information-symbolic',
         subtitle: 'Camera status unavailable',
         accessibleLabel: 'LensGuard camera status is unavailable',

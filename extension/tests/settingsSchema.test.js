@@ -18,6 +18,7 @@ const schema = source.lookup(SCHEMA_ID, false);
 assert(schema, `compiled schema ${SCHEMA_ID} was not found`);
 
 const expectedDefaults = new Map([
+    ['show-panel-indicator', true],
     ['show-backend-unavailable-warning', true],
     ['show-indicator-during-backend-failure', true],
 ]);

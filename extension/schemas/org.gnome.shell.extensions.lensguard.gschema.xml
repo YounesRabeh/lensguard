@@ -2,6 +2,13 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.lensguard"
           path="/org/gnome/shell/extensions/lensguard/">
+    <key name="show-panel-indicator" type="b">
+      <default>true</default>
+      <summary>Show the LensGuard panel icon</summary>
+      <description>
+        Show LensGuard's status icon in the GNOME top bar while retaining its Quick Settings menu.
+      </description>
+    </key>
     <key name="show-backend-unavailable-warning" type="b">
       <default>true</default>
       <summary>Show camera monitoring warnings</summary>

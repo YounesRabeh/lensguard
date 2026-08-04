@@ -159,13 +159,15 @@ Shell, and default to the most visible failure reporting:
 
 | Setting | Default | Effect |
 | --- | --- | --- |
+| Show the LensGuard panel icon | On | Shows LensGuard's status icon in the GNOME top bar while retaining its Quick Settings menu. |
 | Show monitoring warnings | On | Uses explicit warning language and `dialog-warning-symbolic` while the PipeWire backend is unavailable. |
 | Keep the status icon visible | On | Keeps a failure status icon in the panel while camera use cannot be determined. |
 
 Turning warning presentation off uses neutral unavailable-state language and
 `dialog-information-symbolic`; it never claims the camera is safe or inactive. Turning the failure
-icon off only hides that panel status icon. It does not hide an active-camera indicator and does
-not erase the unavailable state from the LensGuard Quick Settings menu.
+Turning the panel icon off hides LensGuard's top-bar icon for all states, but does not hide the
+Quick Settings tile, active-application list, or unavailable state. Turning the failure icon off
+only hides the failure status icon; it does not hide an active-camera indicator.
 
 The schema defaults and descriptions are tested from a freshly compiled temporary schema. The
 GNOME Shell smoke suite changes both preferences live and verifies that they survive an extension

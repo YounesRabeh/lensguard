@@ -68,10 +68,9 @@ transport-only diagnostic endpoint. The public wire contract and CLI examples ar
 
 ![LensGuard reporting that camera monitoring is unavailable](docs/images/step10-backend-unavailable.png)
 
-Open Quick Settings, expand LensGuard, and select **Preferences** to choose whether backend
-failures use warning presentation and whether their panel status icon remains visible. Camera-use
-indicators remain visible regardless of these failure-only preferences. Notifications are not
-implemented.
+Open Quick Settings, expand LensGuard, and select **Preferences** to choose whether the LensGuard
+panel icon is shown, and how backend failures are presented. Hiding the panel icon leaves the
+Quick Settings tile and active-application list available. Notifications are not implemented.
 
 ## License
 
