@@ -1,0 +1,11 @@
+{
+  "name": "lensguard-extension-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint:js": "eslint extension eslint.config.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.2"
+  }
+}

@@ -15,6 +15,7 @@ gnome-extensions pack \
     --force \
     --quiet \
     --extra-source="$repo_root/extension/icons" \
+    --extra-source="$repo_root/extension/src" \
     --out-dir "$output_dir" \
     "$repo_root/extension"
 
@@ -25,7 +26,14 @@ if [[ ! -s $archive ]]; then
 fi
 
 archive_entries=$(unzip -Z1 "$archive")
-for required_file in metadata.json extension.js icons/camera-active.png; do
+for required_file in \
+    metadata.json \
+    extension.js \
+    icons/camera-active.png \
+    schemas/org.gnome.shell.extensions.lensguard.gschema.xml \
+    src/indicator.js \
+    src/mockDataProvider.js \
+    src/sessionModel.js; do
     if ! grep -Fxq "$required_file" <<<"$archive_entries"; then
         printf '%s\n' "extension package is missing $required_file" >&2
         exit 1

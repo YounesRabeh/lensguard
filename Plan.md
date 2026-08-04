@@ -871,42 +871,42 @@ Implement the GNOME Shell UI structure using a mockable data client before conne
 
 ### Checklist
 
-- [ ] Implement `enable()` and `disable()` with complete resource cleanup.
-- [ ] Add a symbolic camera icon to the appropriate GNOME panel/privacy area.
-- [ ] Hide the icon when inactive.
-- [ ] Show the icon when mock state is active.
-- [ ] Implement a menu listing active application and camera names.
-- [ ] Support multiple active sessions.
-- [ ] Show a backend-unavailable status without claiming camera use.
-- [ ] Separate pure session-model code from GNOME-specific widgets.
-- [ ] Ensure repeated enable/disable cycles do not duplicate UI elements or signal handlers.
-- [ ] Avoid blocking operations in GNOME Shell.
-- [ ] Use accessible labels and tooltips.
-- [ ] Add a development-only mock mode controlled through a documented mechanism.
+- [x] Implement `enable()` and `disable()` with complete resource cleanup.
+- [x] Add a symbolic camera icon to the appropriate GNOME panel/privacy area.
+- [x] Hide the icon when inactive.
+- [x] Show the icon when mock state is active.
+- [x] Implement a menu listing active application and camera names.
+- [x] Support multiple active sessions.
+- [x] Show a backend-unavailable status without claiming camera use.
+- [x] Separate pure session-model code from GNOME-specific widgets.
+- [x] Ensure repeated enable/disable cycles do not duplicate UI elements or signal handlers.
+- [x] Avoid blocking operations in GNOME Shell.
+- [x] Use accessible labels and tooltips.
+- [x] Add a development-only mock mode controlled through a documented mechanism.
 
 ### Minimum testing requirements
 
 **JavaScript unit tests**
 
-- [ ] Session list transformation.
-- [ ] Duplicate-session handling.
-- [ ] Active/inactive derived state.
-- [ ] Stable display ordering.
-- [ ] Backend-unavailable view state.
+- [x] Session list transformation.
+- [x] Duplicate-session handling.
+- [x] Active/inactive derived state.
+- [x] Stable display ordering.
+- [x] Backend-unavailable view state.
 
 **Static checks**
 
-- [ ] JavaScript lint passes.
-- [ ] GJS module syntax check passes.
-- [ ] Metadata and schema validation pass.
+- [x] JavaScript lint passes.
+- [x] GJS module syntax check passes.
+- [x] Metadata and schema validation pass.
 
 **GNOME smoke tests**
 
-- [ ] Extension enables successfully.
-- [ ] Mock inactive state hides the icon.
-- [ ] Mock active state shows the icon.
-- [ ] Menu renders one and multiple sessions.
-- [ ] Extension disables without GNOME Shell errors.
+- [x] Extension enables successfully.
+- [x] Mock inactive state hides the icon.
+- [x] Mock active state shows the icon.
+- [x] Menu renders one and multiple sessions.
+- [x] Extension disables without GNOME Shell errors.
 
 ### Deliverables
 

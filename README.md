@@ -6,10 +6,11 @@ GNOME Shell extension over the user D-Bus.
 
 ## Architecture
 
-The project has completed Step 7's functional user daemon. It observes and classifies the current
-`PipeWire` graph, resolves application identity away from native callbacks, maintains camera
-session state, and publishes it through the stable user-session D-Bus contract. Backend failures
-are visible and retried with bounded backoff. The GNOME panel indicator is not implemented yet.
+The project has completed Step 8's mock-driven GNOME Shell UI. The functional user daemon observes
+and classifies the current `PipeWire` graph, resolves application identity away from native
+callbacks, maintains camera session state, and publishes it through the stable user-session D-Bus
+contract. The extension now provides a GNOME Quick Settings privacy indicator, session menu, and
+development mock states; connection to the daemon is deliberately deferred to Step 9.
 
 The repository follows ports and adapters:
 
@@ -29,6 +30,7 @@ must remain separate from domain entities.
 
 ```sh
 make bootstrap
+pnpm install --frozen-lockfile
 make check
 cargo run -p camera-monitor -- --version
 cargo run -p camera-monitor -- --log-level info run
@@ -38,7 +40,7 @@ cargo run -p camera-monitor -- serve-dbus
 ```
 
 See [docs/development.md](docs/development.md) for Fedora setup, recorded local versions, generic
-distribution guidance, and the current manual GNOME lifecycle check. Implementation sequencing
+distribution guidance, and the current mock UI test procedure. Implementation sequencing
 and scope are defined in [Plan.md](Plan.md). Domain invariants and dependency rules are documented
 in [docs/architecture.md](docs/architecture.md).
 

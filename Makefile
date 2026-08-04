@@ -1,4 +1,4 @@
-.PHONY: format format-check lint test check build bootstrap clean
+.PHONY: format format-check lint test check build smoke-extension bootstrap clean
 
 format:
 	cargo fmt --all
@@ -17,6 +17,9 @@ test:
 build:
 	cargo build --workspace
 	./scripts/package-extension.sh dist
+
+smoke-extension: build
+	./scripts/smoke-extension.sh dist/lensguard@younesrabeh.github.io.shell-extension.zip
 
 check: format-check lint test build
 

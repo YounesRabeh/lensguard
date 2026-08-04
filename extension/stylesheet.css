@@ -1,1 +1,3 @@
-/* Visible extension styling is intentionally deferred beyond Step 1. */
+.lensguard-tooltip {
+    max-width: 360px;
+}

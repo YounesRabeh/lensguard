@@ -25,3 +25,6 @@ for (const field of ['uuid', 'name', 'description', 'shell-version']) {
 
 if (!Array.isArray(metadata['shell-version']) || metadata['shell-version'].length === 0)
   fail('shell-version must be a non-empty array');
+
+if (metadata['settings-schema'] !== 'org.gnome.shell.extensions.lensguard')
+  fail('unexpected or missing settings-schema');

@@ -1,9 +1,9 @@
 # Development
 
-LensGuard has completed Step 7's long-running daemon. It supervises PipeWire with bounded retry,
-resolves application identity off native callbacks, reconciles stale sessions after backend loss,
-and publishes the resulting state over the user-session D-Bus. GNOME Shell UI behavior does not
-exist yet.
+LensGuard has completed Step 8's mock-driven GNOME Shell UI. The daemon still supervises PipeWire
+with bounded retry, resolves application identity off native callbacks, reconciles stale sessions
+after backend loss, and publishes the resulting state over the user-session D-Bus. The extension
+currently uses development-only mock data; the live D-Bus client belongs to Step 9.
 
 ## Recorded local environment
 
@@ -13,6 +13,7 @@ The baseline was captured on 2026-08-04 on Fedora Linux 44 Workstation:
 | --- | --- |
 | GNOME Shell | 50.3; extension metadata targets compatibility value `50` |
 | GJS | 1.88.1 |
+| Node.js, pnpm, ESLint | 24.18.0, 11.18.0, 9.39.5 |
 | Rust compiler and Cargo | 1.97.1, Fedora packages; workspace edition 2024 |
 | `rustfmt` | 1.9.0 (installed before final Step 1 verification) |
 | Clippy | 0.1.97 (installed before final Step 1 verification) |
@@ -34,7 +35,7 @@ Fedora releases; use `dnf search` if a listed package is unavailable.
 
 ```sh
 sudo dnf install cargo rust rustfmt clippy clang pkgconf-pkg-config make gjs gnome-shell \
-  pipewire pipewire-devel wireplumber dbus-tools systemd unzip
+  glib2 nodejs pnpm ripgrep pipewire pipewire-devel wireplumber dbus-tools systemd unzip
 ```
 
 ShellCheck is optional but recommended:
@@ -64,10 +65,11 @@ extension on another major GNOME release.
 
 ## Commands
 
-The bootstrap command only reports prerequisites; it does not install packages or alter the
-system:
+Install the locked JavaScript development tools, then run the bootstrap check. The bootstrap
+command only reports prerequisites; it does not install packages or alter the system:
 
 ```sh
+pnpm install --frozen-lockfile
 make bootstrap
 ```
 
@@ -127,7 +129,20 @@ verification.
 See [the daemon lifecycle smoke test](../tests/manual/daemon-lifecycle.md) for reproducible normal,
 signal, and backend-loss process checks.
 
-Step 1 intentionally has no live GNOME enable/disable test automation. To verify lifecycle
-loading manually, install the generated bundle in a disposable GNOME user session, enable and
-disable it with the Extensions application, and confirm the Shell journal has no LensGuard
-errors. The extension adds no panel item at this stage.
+## GNOME mock UI
+
+The Step 8 extension uses `org.gnome.shell.extensions.lensguard` key `mock-state`. Supported
+development values are `inactive`, `active-one`, `active-multiple`, and `backend-unavailable`.
+They are test-only inputs and do not read the daemon or camera hardware.
+
+Run the isolated GNOME 50 smoke test without changing the live desktop:
+
+```sh
+make smoke-extension
+```
+
+For live visual review, install `dist/lensguard@younesrabeh.github.io.shell-extension.zip`, enable
+the extension, and point `GSETTINGS_SCHEMA_DIR` at the installed extension's `schemas` directory
+before changing `mock-state` with `gsettings`. Exact commands, expected UI, cleanup, and the
+recorded Step 8 result are in
+[the GNOME mock UI test](../tests/manual/gnome-mock-ui.md).
