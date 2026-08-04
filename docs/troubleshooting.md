@@ -1,5 +1,21 @@
 # Troubleshooting
 
+## D-Bus service is unavailable
+
+Start `cargo run -p camera-monitor -- serve-dbus` from a terminal in the same graphical user
+session as the client. Confirm that `DBUS_SESSION_BUS_ADDRESS` is set, then call the `Ping` example
+in `docs/dbus-api.md`. Sandboxes may expose the address while denying access to its Unix socket;
+use an ordinary user-session terminal or an isolated `dbus-run-session` test in that case.
+
+If startup reports that the name already exists, inspect its owner with:
+
+```sh
+busctl --user status io.github.younesrabeh.CameraMonitor
+```
+
+The Step 6 endpoint deliberately reports an empty inactive state. Live PipeWire events will be
+connected in Step 7; an empty result alone is not a D-Bus failure.
+
 ## PipeWire inspection cannot connect
 
 Run the diagnostic from a terminal inside the active graphical login session:

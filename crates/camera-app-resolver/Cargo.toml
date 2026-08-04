@@ -11,5 +11,5 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-camera-core = { version = "0.5.0", path = "../camera-core" }
+camera-core.workspace = true
 thiserror = "2.0.19"

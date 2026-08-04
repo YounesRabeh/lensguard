@@ -740,42 +740,42 @@ Expose daemon state through a stable, documented user-session D-Bus API independ
 
 ### Checklist
 
-- [ ] Finalize D-Bus names and signatures.
-- [ ] Write canonical introspection XML.
-- [ ] Implement DTO conversion from domain entities.
-- [ ] Implement `Active`, `ActiveSessionCount`, `BackendAvailable`, and `Version` properties.
-- [ ] Implement `GetActiveSessions` and `Ping` methods.
-- [ ] Emit state and session signals.
-- [ ] Ensure property-change notifications are emitted correctly.
-- [ ] Sort returned session arrays deterministically.
-- [ ] Do not expose raw PipeWire IDs as stable public identifiers.
-- [ ] Return typed D-Bus errors with useful names and messages.
-- [ ] Add `docs/dbus-api.md` with examples using standard D-Bus CLI tools.
+- [x] Finalize D-Bus names and signatures.
+- [x] Write canonical introspection XML.
+- [x] Implement DTO conversion from domain entities.
+- [x] Implement `Active`, `ActiveSessionCount`, `BackendAvailable`, and `Version` properties.
+- [x] Implement `GetActiveSessions` and `Ping` methods.
+- [x] Emit state and session signals.
+- [x] Ensure property-change notifications are emitted correctly.
+- [x] Sort returned session arrays deterministically.
+- [x] Do not expose raw PipeWire IDs as stable public identifiers.
+- [x] Return typed D-Bus errors with useful names and messages.
+- [x] Add `docs/dbus-api.md` with examples using standard D-Bus CLI tools.
 
 ### Minimum testing requirements
 
 **Unit tests**
 
-- [ ] Domain-to-D-Bus DTO conversion.
-- [ ] Empty, single-session, and multiple-session snapshots.
-- [ ] Stable field ordering and values where applicable.
+- [x] Domain-to-D-Bus DTO conversion.
+- [x] Empty, single-session, and multiple-session snapshots.
+- [x] Stable field ordering and values where applicable.
 
 **D-Bus integration tests**
 
 Run in an isolated session bus when possible.
 
-- [ ] Service acquires the expected bus name.
-- [ ] `Ping` returns the expected response.
-- [ ] Initial properties are correct.
-- [ ] Applying a start event updates properties and emits signals.
-- [ ] Applying a stop event updates properties and emits signals.
-- [ ] `GetActiveSessions` matches current domain state.
-- [ ] Service exits cleanly and releases its bus name.
+- [x] Service acquires the expected bus name.
+- [x] `Ping` returns the expected response.
+- [x] Initial properties are correct.
+- [x] Applying a start event updates properties and emits signals.
+- [x] Applying a stop event updates properties and emits signals.
+- [x] `GetActiveSessions` matches current domain state.
+- [x] Service exits cleanly and releases its bus name.
 
 **Smoke tests**
 
-- [ ] Introspection works with a standard D-Bus inspection command.
-- [ ] A shell command can read `Active` and call `GetActiveSessions`.
+- [x] Introspection works with a standard D-Bus inspection command.
+- [x] A shell command can read `Active` and call `GetActiveSessions`.
 
 ### Deliverables
 

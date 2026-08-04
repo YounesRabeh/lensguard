@@ -9,3 +9,13 @@ repository.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+camera-core.workspace = true
+serde = { version = "1.0.229", features = ["derive"] }
+thiserror = "2.0.19"
+zbus = { version = "5.13.2", default-features = false, features = ["tokio"] }
+
+[dev-dependencies]
+futures-util = "0.3.31"
+tokio = { version = "1.53.1", features = ["macros", "process", "rt", "time"] }

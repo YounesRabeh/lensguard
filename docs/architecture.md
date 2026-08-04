@@ -7,7 +7,7 @@ transport integrations translate their native data before crossing that boundary
 PipeWire adapter ─┐
                   ├─ MonitorEvent → MonitorState → MonitorSnapshot ─┐
 Other adapters ───┘                                                  ├─ application observers
-                                                                     └─ future D-Bus adapter
+                                                                     └─ D-Bus adapter
 ```
 
 ## Dependency direction
@@ -54,8 +54,8 @@ snapshots. Both expose associated typed errors and are synchronous by design. Th
 selection and channel ownership outside the domain while still allowing fake implementations in
 tests.
 
-D-Bus data-transfer objects will be defined separately in `camera-dbus`; the domain entities in
-this document are not the public wire contract.
+D-Bus data-transfer objects are defined separately in `camera-dbus`; the domain entities in this
+document are not the public wire contract.
 
 ## PipeWire registry adapter
 
@@ -129,3 +129,20 @@ characters are normalized before a fallback is displayed.
 Process exit and permission failures are non-fatal: the session is preserved with the best
 remaining identity. Resolutions use a bounded cache keyed by all identity inputs. Exact entries
 can be invalidated, and the complete cache can be cleared when desktop-entry state changes.
+
+## D-Bus adapter
+
+`camera-dbus` owns the public transport contract. It converts `MonitorSnapshot` sessions into a
+fixed `(sssssstu)` DTO and never exports backend-native objects, raw PipeWire IDs, executable
+paths, node names, or icon paths. Returned arrays are sorted by the opaque domain session ID.
+
+The service owns `io.github.younesrabeh.CameraMonitor` on the user session bus and exports the
+versioned `io.github.younesrabeh.CameraMonitor1` interface. Domain events are reduced through
+`MonitorState` before the adapter emits semantic signals and standard property-change
+notifications. Duplicate domain events therefore produce no public notification. The canonical
+contract is in `dbus/io.github.younesrabeh.CameraMonitor1.xml` and client semantics are documented
+in `docs/dbus-api.md`.
+
+The Step 6 `serve-dbus` command publishes an empty standalone state so the transport can be tested
+without PipeWire. Combining the PipeWire source, resolver, state, and D-Bus service remains the
+Step 7 application-orchestration boundary.

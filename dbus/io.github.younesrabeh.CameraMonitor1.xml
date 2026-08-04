@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node name="/io/github/younesrabeh/CameraMonitor">
+  <interface name="io.github.younesrabeh.CameraMonitor1">
+    <method name="GetActiveSessions">
+      <arg name="sessions" type="a(sssssstu)" direction="out"/>
+    </method>
+    <method name="Ping">
+      <arg name="response" type="s" direction="out"/>
+    </method>
+
+    <property name="Active" type="b" access="read"/>
+    <property name="ActiveSessionCount" type="u" access="read"/>
+    <property name="BackendAvailable" type="b" access="read"/>
+    <property name="Version" type="s" access="read">
+      <annotation name="org.freedesktop.DBus.Property.EmitsChangedSignal" value="const"/>
+    </property>
+
+    <signal name="StateChanged">
+      <arg name="active" type="b"/>
+      <arg name="active_session_count" type="u"/>
+      <arg name="backend_available" type="b"/>
+    </signal>
+    <signal name="SessionStarted">
+      <arg name="session" type="(sssssstu)"/>
+    </signal>
+    <signal name="SessionStopped">
+      <arg name="session_id" type="s"/>
+    </signal>
+    <signal name="BackendAvailabilityChanged">
+      <arg name="available" type="b"/>
+    </signal>
+  </interface>
+</node>

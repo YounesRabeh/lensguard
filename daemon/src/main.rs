@@ -1,7 +1,7 @@
 use std::process::ExitCode;
 
 use camera_app_resolver::{ApplicationResolver, ResolutionRequest};
-use camera_core::{CameraEventSource, MonitorEvent};
+use camera_core::{CameraEventSource, MonitorEvent, MonitorState};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -13,9 +13,10 @@ fn main() -> ExitCode {
         }
         Some("inspect-pipewire") => inspect_pipewire(),
         Some("watch-pipewire") => watch_pipewire(),
+        Some("serve-dbus") => serve_dbus(),
         None => {
             eprintln!(
-                "camera-monitor {VERSION}: use inspect-pipewire or watch-pipewire for diagnostics"
+                "camera-monitor {VERSION}: use inspect-pipewire, watch-pipewire, or serve-dbus"
             );
             ExitCode::SUCCESS
         }
@@ -24,6 +25,42 @@ fn main() -> ExitCode {
             ExitCode::from(2)
         }
     }
+}
+
+fn serve_dbus() -> ExitCode {
+    if !initialize_logging() {
+        return ExitCode::FAILURE;
+    }
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(runtime) => runtime,
+        Err(error) => {
+            eprintln!("camera-monitor: failed to create D-Bus runtime: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    runtime.block_on(async {
+        let service = match camera_dbus::DbusService::session(MonitorState::new()).await {
+            Ok(service) => service,
+            Err(error) => {
+                eprintln!("camera-monitor: D-Bus service failed to start: {error}");
+                return ExitCode::FAILURE;
+            }
+        };
+        println!(
+            "D-Bus camera monitor ready at {} {}; press Ctrl+C to stop",
+            camera_dbus::BUS_NAME,
+            camera_dbus::OBJECT_PATH
+        );
+        if let Err(error) = tokio::signal::ctrl_c().await {
+            eprintln!("camera-monitor: failed to wait for shutdown signal: {error}");
+            return ExitCode::FAILURE;
+        }
+        if let Err(error) = service.shutdown().await {
+            eprintln!("camera-monitor: D-Bus service shutdown failed: {error}");
+            return ExitCode::FAILURE;
+        }
+        ExitCode::SUCCESS
+    })
 }
 
 fn inspect_pipewire() -> ExitCode {

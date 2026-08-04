@@ -1,8 +1,9 @@
 # Development
 
-LensGuard has completed Step 5 application identity resolution. A live adapter emits domain
-camera-session events enriched from trusted PipeWire hints, procfs, standard desktop entries, and
-Flatpak metadata. D-Bus and UI behavior do not exist yet.
+LensGuard has completed Step 6's D-Bus contract. A live adapter emits domain camera-session events
+enriched from trusted PipeWire hints, procfs, standard desktop entries, and Flatpak metadata. An
+independently runnable user-session D-Bus endpoint now exposes stable DTOs, properties, methods,
+and signals. PipeWire-to-D-Bus orchestration and UI behavior do not exist yet.
 
 ## Recorded local environment
 
@@ -46,6 +47,13 @@ The project requires Rust 1.85 or newer because it uses the Rust 2024 edition. A
 Rust toolchain installed through rustup is also supported; add the `rustfmt` and `clippy`
 components when using that distribution.
 
+## Project version
+
+The single project version source is `version` under `[workspace.package]` in the root
+`Cargo.toml`. Every workspace package uses `version.workspace = true`, and internal dependencies
+are inherited from `[workspace.dependencies]` without duplicating the project version. Changing
+the root value therefore updates every LensGuard crate and the daemon together.
+
 ## Other Linux distributions
 
 Install equivalent packages providing stable Rust 1.85+, Cargo, rustfmt, Clippy, Clang/libclang,
@@ -80,11 +88,17 @@ Both directories are ignored by Git. To inspect the daemon bootstrap executable:
 cargo run -p camera-monitor -- --version
 cargo run -p camera-monitor -- inspect-pipewire
 cargo run -p camera-monitor -- watch-pipewire
+cargo run -p camera-monitor -- serve-dbus
 ```
 
 The watcher resolves application names on the daemon consumer thread. A typical event is
 `START ... application="Snapshot" ...`; if metadata is unavailable it uses a safe process-based
 name or `Unknown application` without dropping the session.
+
+`serve-dbus` owns `io.github.younesrabeh.CameraMonitor` until Ctrl+C and publishes an initially
+empty Step 6 state. Use the commands in [the D-Bus API reference](dbus-api.md) from a second
+terminal. Isolated D-Bus integration tests use `dbus-daemon`; environments that forbid Unix
+socket creation must run `cargo test -p camera-dbus` outside that sandbox.
 
 ## Troubleshooting application identity
 
