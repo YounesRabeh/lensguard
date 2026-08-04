@@ -4,20 +4,20 @@ version = 4
 
 [[package]]
 name = "camera-app-resolver"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "camera-core"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "camera-dbus"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "camera-monitor"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "camera-pipewire"
-version = "0.1.0"
+version = "0.2.0"

@@ -1,8 +1,8 @@
 # Development
 
-LensGuard is currently at the Step 1 repository-bootstrap stage. The Rust crates and GNOME
-Shell extension lifecycle compile and parse, but camera monitoring, D-Bus, and UI behavior do
-not exist yet.
+LensGuard has completed the Step 2 pure-domain baseline. The domain state machine is implemented
+and fully testable without desktop services. Camera monitoring, D-Bus, and UI behavior do not
+exist yet.
 
 ## Recorded local environment
 

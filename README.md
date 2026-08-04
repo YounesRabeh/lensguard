@@ -6,9 +6,13 @@ GNOME Shell extension over the user D-Bus.
 
 ## Architecture
 
+The project has completed its pure-domain Step 2. It does not yet connect to `PipeWire`, run a
+D-Bus service, or display a camera indicator.
+
 The repository follows ports and adapters:
 
-- `camera-core` will own pure domain models and state without desktop dependencies.
+- `camera-core` owns pure domain models, idempotent event reduction, ordered snapshots, and port
+  traits without desktop dependencies.
 - `camera-pipewire` will adapt PipeWire graph events to the domain boundary.
 - `camera-app-resolver` will resolve process and desktop application identity.
 - `camera-dbus` will translate internal state into a stable user-session D-Bus API.
@@ -29,7 +33,8 @@ cargo run -p camera-monitor -- --version
 
 See [docs/development.md](docs/development.md) for Fedora setup, recorded local versions, generic
 distribution guidance, and the current manual GNOME lifecycle check. Implementation sequencing
-and scope are defined in [Plan.md](Plan.md).
+and scope are defined in [Plan.md](Plan.md). Domain invariants and dependency rules are documented
+in [docs/architecture.md](docs/architecture.md).
 
 ## License
 
