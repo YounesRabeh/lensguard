@@ -1,0 +1,7 @@
+{
+  "uuid": "lensguard@younesrabeh.github.io",
+  "name": "LensGuard",
+  "description": "Shows camera access in GNOME Shell (bootstrap skeleton).",
+  "shell-version": ["50"],
+  "version": 1
+}
