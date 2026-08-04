@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=io.github.younesrabeh.CameraMonitor
+Exec="@EXECUTABLE@" --log-level info run
+SystemdService=camera-monitor.service

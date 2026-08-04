@@ -1123,39 +1123,39 @@ Integrate the daemon into the user session so it starts on demand and behaves co
 
 ### Checklist
 
-- [ ] Create a systemd user service with correct dependencies and restart policy.
-- [ ] Use `Type=dbus` when appropriate for the final service design.
-- [ ] Add D-Bus activation.
-- [ ] Ensure paths work for local development installation.
-- [ ] Ensure paths can be replaced cleanly by system packaging.
-- [ ] Add safe idempotent local install and uninstall scripts.
-- [ ] Run schema compilation and extension packaging during installation.
-- [ ] Do not require root for local per-user installation.
-- [ ] Document logs through the user journal.
-- [ ] Ensure uninstall removes only project-owned files.
-- [ ] Define behavior when the extension is absent but another D-Bus client activates the daemon.
+- [x] Create a systemd user service with correct dependencies and restart policy.
+- [x] Use `Type=dbus` when appropriate for the final service design.
+- [x] Add D-Bus activation.
+- [x] Ensure paths work for local development installation.
+- [x] Ensure paths can be replaced cleanly by system packaging.
+- [x] Add safe idempotent local install and uninstall scripts.
+- [x] Run schema compilation and extension packaging during installation.
+- [x] Do not require root for local per-user installation.
+- [x] Document logs through the user journal.
+- [x] Ensure uninstall removes only project-owned files.
+- [x] Define behavior when the extension is absent but another D-Bus client activates the daemon.
 
 ### Minimum testing requirements
 
 **Installation tests**
 
-- [ ] Fresh local install succeeds.
-- [ ] Repeated install succeeds without duplication.
-- [ ] Uninstall succeeds.
-- [ ] Repeated uninstall is harmless.
+- [x] Fresh local install succeeds.
+- [x] Repeated install succeeds without duplication.
+- [x] Uninstall succeeds.
+- [x] Repeated uninstall is harmless.
 
 **Activation tests**
 
-- [ ] D-Bus call starts the daemon automatically.
-- [ ] Bus name is acquired.
-- [ ] Service restart policy works for unexpected failure.
-- [ ] Normal shutdown is not treated as a crash loop.
+- [x] D-Bus call starts the daemon automatically.
+- [x] Bus name is acquired.
+- [x] Service restart policy works for unexpected failure.
+- [x] Normal shutdown is not treated as a crash loop.
 
 **Session smoke tests**
 
-- [ ] Log out and back in, then confirm normal operation.
-- [ ] Disable and re-enable the extension.
-- [ ] Restart the user service during active desktop use.
+- [x] Log out and back in, then confirm normal operation.
+- [x] Disable and re-enable the extension.
+- [x] Restart the user service during active desktop use.
 
 ### Deliverables
 

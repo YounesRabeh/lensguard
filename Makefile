@@ -1,4 +1,4 @@
-.PHONY: format format-check lint test check build smoke-extension smoke-real-camera capture-extension-screenshots bootstrap clean
+.PHONY: format format-check lint test check build smoke-extension smoke-real-camera capture-extension-screenshots test-local-installation install-local uninstall-local bootstrap clean
 
 format:
 	cargo fmt --all
@@ -14,6 +14,7 @@ lint:
 test:
 	cargo test --workspace
 	./scripts/test-extension-dbus.sh
+	./scripts/test-local-installation.sh
 
 build:
 	cargo build --workspace
@@ -27,6 +28,15 @@ smoke-real-camera: build
 
 capture-extension-screenshots: build
 	./scripts/capture-extension-screenshots.sh dist/lensguard@younesrabeh.github.io.shell-extension.zip
+
+test-local-installation: build
+	./scripts/test-local-installation.sh
+
+install-local:
+	./scripts/install-local.sh
+
+uninstall-local:
+	./scripts/uninstall-local.sh
 
 check: format-check lint test build
 

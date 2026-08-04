@@ -1,0 +1,19 @@
+[Unit]
+Description=LensGuard camera access monitor
+Documentation=https://github.com/younesrabeh/lensguard
+After=graphical-session.target pipewire.service
+PartOf=graphical-session.target
+StartLimitIntervalSec=30
+StartLimitBurst=5
+
+[Service]
+Type=dbus
+BusName=io.github.younesrabeh.CameraMonitor
+ExecStart="@EXECUTABLE@" --log-level info run
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+NoNewPrivileges=yes
+
+# LensGuard is activated on demand over D-Bus. Packages may optionally add an [Install] section
+# when distribution policy requires eager startup.

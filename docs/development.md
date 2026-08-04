@@ -1,6 +1,6 @@
 # Development
 
-LensGuard has completed Step 10's non-notification preferences and UX scope. The daemon supervises
+LensGuard has completed Step 12's user-session integration scope. The daemon supervises
 PipeWire with bounded retry, resolves application identity off native callbacks, reconciles stale
 sessions after backend loss, and publishes the resulting state over the user-session D-Bus. The
 extension uses only asynchronous D-Bus calls, validates daemon payloads, and resynchronizes across
@@ -87,6 +87,9 @@ make build
 make check
 make smoke-extension
 make capture-extension-screenshots
+make test-local-installation
+make install-local
+make uninstall-local
 ```
 
 `make build` writes Rust artifacts to `target/` and a development extension bundle to `dist/`.

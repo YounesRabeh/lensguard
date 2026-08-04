@@ -40,6 +40,16 @@ cargo run -p camera-monitor -- watch-pipewire
 cargo run -p camera-monitor -- serve-dbus
 ```
 
+Install the finished application for the current user without root:
+
+```sh
+make install-local
+gnome-extensions enable lensguard@younesrabeh.github.io
+```
+
+See [docs/installation.md](docs/installation.md) for activation, journal, restart, packaging-path,
+and uninstall details.
+
 See [docs/development.md](docs/development.md) for Fedora setup, recorded local versions, generic
 distribution guidance, and live extension test procedures. Implementation sequencing
 and scope are defined in [Plan.md](Plan.md). Domain invariants and dependency rules are documented

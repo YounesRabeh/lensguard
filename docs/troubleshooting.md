@@ -1,5 +1,31 @@
 # Troubleshooting
 
+## Installed service does not activate
+
+Confirm both local integration files exist, then reload their managers:
+
+```sh
+systemctl --user daemon-reload
+gdbus call --session \
+  --dest org.freedesktop.DBus \
+  --object-path /org/freedesktop/DBus \
+  --method org.freedesktop.DBus.ReloadConfig
+systemctl --user status camera-monitor.service
+```
+
+Test activation with the `Ping` command in `docs/installation.md`. A newly installed GNOME
+extension may need logout/login before Shell discovers it, but direct D-Bus activation should not.
+
+Inspect startup, PipeWire connection, restart, and clean-shutdown messages with:
+
+```sh
+journalctl --user -u camera-monitor.service -b
+```
+
+If systemd reports a start-limit failure after repeated crashes, inspect the journal first, then
+run `systemctl --user reset-failed camera-monitor.service`. Do not enable a system service or run
+the daemon as root; it requires the ordinary user's D-Bus and PipeWire sessions.
+
 ## D-Bus service is unavailable
 
 Start `cargo run -p camera-monitor -- run` from a terminal in the same graphical user
