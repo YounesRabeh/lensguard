@@ -80,11 +80,11 @@ cmp "$test_root/first-install.sha256" "$test_root/second-install.sha256"
 [[ $(find "$data_home/gnome-shell/extensions" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ]]
 
 activate_once() {
+    # shellcheck disable=SC2016 # The inner bash process expands these expressions.
     env \
         HOME="$test_home" \
         XDG_DATA_HOME="$data_home" \
         XDG_CONFIG_HOME="$config_home" \
-        # shellcheck disable=SC2016 # The inner bash process expands these expressions.
         timeout 15 dbus-run-session -- bash -c '
             set -euo pipefail
             response=$(gdbus call --session \
