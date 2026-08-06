@@ -84,6 +84,7 @@ activate_once() {
         HOME="$test_home" \
         XDG_DATA_HOME="$data_home" \
         XDG_CONFIG_HOME="$config_home" \
+        # shellcheck disable=SC2016 # The inner bash process expands these expressions.
         timeout 15 dbus-run-session -- bash -c '
             set -euo pipefail
             response=$(gdbus call --session \

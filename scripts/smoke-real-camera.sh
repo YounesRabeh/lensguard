@@ -17,6 +17,7 @@ if [[ ! -s $archive ]]; then
     exit 1
 fi
 
+# shellcheck disable=SC2016 # The inner bash process expands these expressions.
 dbus-run-session -- bash -c '
     set -euo pipefail
     daemon=$1
@@ -26,6 +27,7 @@ dbus-run-session -- bash -c '
 
     "$daemon" --log-level info run &
     daemon_pid=$!
+    # shellcheck disable=SC2016 # daemon_pid belongs to the inner bash process.
     trap '\''kill -TERM "$daemon_pid" 2>/dev/null || true; wait "$daemon_pid" 2>/dev/null || true'\'' EXIT
 
     env GSETTINGS_BACKEND=memory gnome-shell-test-tool \
