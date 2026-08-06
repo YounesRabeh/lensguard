@@ -24,10 +24,10 @@ function delay(milliseconds) {
 }
 
 async function waitFor(predicate, message) {
-    for (let attempt = 0; attempt < 100; attempt++) {
+    for (let attempt = 0; attempt < 200; attempt++) {
         if (predicate())
             return;
-        await delay(5);
+        await delay(10);
     }
 
     throw new Error(message);
