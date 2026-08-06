@@ -20,7 +20,10 @@ function assertEqual(actual, expected, message) {
 
 function delay(milliseconds) {
     return new Promise(resolve => {
-        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, milliseconds, resolve);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, milliseconds, () => {
+            resolve();
+            return GLib.SOURCE_REMOVE;
+        });
     });
 }
 
