@@ -867,7 +867,7 @@ LensGuard's supported architecture is:
 
 ```text
 Detection:
-direct V4L2 capture monitoring only
+direct native direct V4L2 capture monitoring only
 
 Kernel observation:
 narrowly privileged eBPF observer
