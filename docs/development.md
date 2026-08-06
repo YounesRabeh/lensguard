@@ -118,6 +118,23 @@ unavailable while connecting, and then publishes live state. Failed connections 
 128 events for each application stage. Isolated D-Bus integration tests use `dbus-daemon`;
 environments that forbid Unix socket creation must run those tests outside that sandbox.
 
+### Expected test-session warnings
+
+The isolated D-Bus and local-installation tests intentionally start and stop temporary session
+buses and service processes. During normal successful runs, their output may include messages such
+as:
+
+- `name already taken on the bus`, when duplicate bus-name handling is exercised;
+- `A connection to the bus can't be made` or `Broken pipe`, while a temporary bus or service is
+  being torn down; and
+- `fusermount3: failed to access mountpoint /run/user/.../gvfs: Permission denied`, from GTK/GVFS
+  probing in a restricted development environment.
+
+These messages are not failures by themselves. Treat the test as successful when the command exits
+with status `0` and its final `... tests passed` or `... passed` messages are present. Investigate
+the output when the command exits non-zero, stops before its completion message, or the same errors
+occur during normal daemon operation rather than inside an isolated test session.
+
 ## Troubleshooting application identity
 
 - If the application remains `Unknown application`, inspect the application input node with
