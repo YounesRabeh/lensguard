@@ -7,17 +7,17 @@ format-check:
 	cargo fmt --all --check
 
 lint:
-	cargo clippy --workspace --all-targets --all-features -- -D warnings
+	cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 	./scripts/check-extension.sh
 	@if command -v shellcheck >/dev/null 2>&1; then shellcheck scripts/*.sh; else echo "shellcheck not installed; skipping optional shell lint"; fi
 
 test:
-	cargo test --workspace
+	cargo test --workspace --locked
 	./scripts/test-extension-dbus.sh
 	./scripts/test-local-installation.sh
 
 build:
-	cargo build --workspace
+	cargo build --workspace --locked
 	./scripts/package-extension.sh dist
 
 smoke-extension: build
