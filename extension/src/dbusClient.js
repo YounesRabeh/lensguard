@@ -55,7 +55,10 @@ function defaultCreateProxy(connection, nameOwner, cancellable) {
 }
 
 function defaultScheduleIdle(callback) {
-    return GLib.idle_add_once(GLib.PRIORITY_DEFAULT_IDLE, callback);
+    return GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+        callback();
+        return GLib.SOURCE_REMOVE;
+    });
 }
 
 function defaultCallProxy(proxy, cancellable) {
