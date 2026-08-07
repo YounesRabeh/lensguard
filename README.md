@@ -75,5 +75,4 @@ panel icon is shown, and how backend failures are presented. Hiding the panel ic
 Quick Settings tile and active-application list available. Notifications are not implemented.
 
 ## License
-
 MIT. See [LICENSE](LICENSE).
