@@ -356,11 +356,11 @@ impl RawGraph {
             Entry::Occupied(mut entry) => {
                 let port = entry.get_mut();
                 let mut changed = merge_properties(&mut port.properties, properties);
-                if let Some(node_id) = node_id
-                    && port.node_id != Some(node_id)
-                {
-                    port.node_id = Some(node_id);
-                    changed = true;
+                if let Some(node_id) = node_id {
+                    if port.node_id != Some(node_id) {
+                        port.node_id = Some(node_id);
+                        changed = true;
+                    }
                 }
                 let new_direction = direction.unwrap_or(property_direction);
                 if new_direction != PortDirection::Unknown && port.direction != new_direction {
