@@ -28,6 +28,7 @@ jobs:
       - name: Verify semantic tag, version, and main ancestry
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -38,7 +39,9 @@ jobs:
           fi
           version=$(./scripts/project-version.sh)
           test "$GITHUB_REF_NAME" = "v$version"
-          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git fetch --no-tags \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            +refs/heads/main:refs/remotes/origin/main
           git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main
           previous_tag=$(gh release list --exclude-drafts --exclude-pre-releases \
             --limit 100 --json tagName \
