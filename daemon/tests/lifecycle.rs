@@ -534,9 +534,19 @@ async fn idle_backend_shutdown_completes_within_a_bounded_duration() {
     assert!(started.elapsed() < Duration::from_secs(1));
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[test]
+fn repeated_session_churn_keeps_memory_and_task_counts_bounded() {
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2)
+        .max_blocking_threads(1)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(repeated_session_churn_keeps_memory_and_task_counts_bounded_async());
+}
+
 #[allow(clippy::await_holding_lock)]
-async fn repeated_session_churn_keeps_memory_and_task_counts_bounded() {
+async fn repeated_session_churn_keeps_memory_and_task_counts_bounded_async() {
     const CHURN_CYCLES: usize = 2_000;
 
     let _dbus_test = DBUS_TEST_LOCK.lock().unwrap();
