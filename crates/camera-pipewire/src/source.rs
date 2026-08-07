@@ -125,10 +125,10 @@ fn run_monitor(
     let sender_for_events = event_sender.clone();
     let main_loop_for_events = main_loop.downgrade();
     let on_event: Rc<dyn Fn(RegistryEvent)> = Rc::new(move |event| {
-        if !apply_registry_event(&engine_for_events, &sender_for_events, event)
-            && let Some(main_loop) = main_loop_for_events.upgrade()
-        {
-            main_loop.quit();
+        if !apply_registry_event(&engine_for_events, &sender_for_events, event) {
+            if let Some(main_loop) = main_loop_for_events.upgrade() {
+                main_loop.quit();
+            }
         }
     });
     let _observation = attach_registry(&registry, &on_event);

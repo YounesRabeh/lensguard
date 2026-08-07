@@ -7,11 +7,12 @@ pub(crate) fn app_id_from_flatpak_info(contents: &str) -> Option<String> {
             in_application = line == "[Application]";
             continue;
         }
-        if in_application
-            && let Some(value) = line.strip_prefix("name=")
-            && !value.trim().is_empty()
-        {
-            return Some(value.trim().to_owned());
+        if in_application {
+            if let Some(value) = line.strip_prefix("name=") {
+                if !value.trim().is_empty() {
+                    return Some(value.trim().to_owned());
+                }
+            }
         }
     }
     None

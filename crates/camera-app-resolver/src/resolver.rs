@@ -177,10 +177,10 @@ impl ApplicationResolver {
     }
 
     fn insert_cache(&mut self, request: ResolutionRequest, identity: ApplicationIdentity) {
-        if self.cache.len() == self.cache_capacity
-            && let Some(oldest) = self.recency.pop_front()
-        {
-            self.cache.remove(&oldest);
+        if self.cache.len() == self.cache_capacity {
+            if let Some(oldest) = self.recency.pop_front() {
+                self.cache.remove(&oldest);
+            }
         }
         self.recency.push_back(request.clone());
         self.cache.insert(request, identity);
