@@ -12,16 +12,23 @@ require its `CI / Check on Ubuntu` status before merging to `main`.
 
 Strict semantic tags such as `v1.3.0` run the release workflow. It verifies that the tag version
 matches `Cargo.toml`, is newer than the latest published stable release, and is reachable from
-`main`. It then repeats full CI and builds DEB, RPM, Arch, extension, daemon, source, licence, and
-manifest artifacts.
+`main`. It requires successful CI on the tagged commit, then builds DEB, RPM, Arch, extension,
+daemon, source, licence, and manifest artifacts.
 
 Each native package is metadata-linted, installed in its target distribution container, checked
 for installed paths and permissions, cold-activated over D-Bus, upgraded from the previous stable
 package when one exists, and uninstalled. Upgrade tests also verify that the panel-indicator
 preference is preserved.
 
-The workflow creates a **draft** GitHub release only. Reviewing and publishing that draft—and any
-later GNOME Extensions submission—remain deliberate publishing steps.
+After the release workflow succeeds, the separate publish workflow creates a **draft** GitHub
+release containing only the standalone extension ZIP and the installable DEB, binary RPM, and Arch
+packages. Rerunning that publish workflow replaces an existing draft without rebuilding packages.
+Reviewing and publishing the draft—and any later GNOME Extensions submission—remain deliberate
+publishing steps.
+
+To repeat publication without rerunning the release build, manually run **Publish release draft**
+and provide the successful **Release candidate** workflow run ID. The publish workflow verifies the
+source run and its checksums before replacing the draft.
 
 The container base images are pinned by digest. Distribution repositories inside those containers
 remain current compatibility inputs, so release reruns are controlled but are not guaranteed to be

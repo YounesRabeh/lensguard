@@ -439,8 +439,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  draft-release:
-    name: Assemble verified draft release
+  release-bundle:
+    name: Assemble verified release bundle
     needs:
       - package-core
       - package-deb
@@ -448,9 +448,6 @@ jobs:
       - package-arch
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    permissions:
-      contents: write
-
     steps:
       - name: Check out release tag
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -495,8 +492,10 @@ jobs:
           chmod 0755 "$daemon"
           (
             cd release-artifacts
+            checksums=$(mktemp)
             find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\n' | \
-              sort | xargs -r sha256sum > SHA256SUMS
+              sort | xargs -r sha256sum > "$checksums"
+            mv -- "$checksums" SHA256SUMS
           )
           ./scripts/check-release.sh release-artifacts
           ./scripts/check-package-artifacts.sh release-artifacts
@@ -508,24 +507,3 @@ jobs:
           path: release-artifacts/
           if-no-files-found: error
           retention-days: 30
-
-      - name: Create or update draft GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if draft=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft 2>/dev/null); then
-            if [[ $draft != true ]]; then
-              printf 'Refusing to modify existing published release %s.\n' "$GITHUB_REF_NAME" >&2
-              exit 1
-            fi
-            gh release delete "$GITHUB_REF_NAME" --yes
-          fi
-          banner_url="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/docs/images/lensguard-banner.png"
-          gh release create "$GITHUB_REF_NAME" release-artifacts/* \
-            --draft \
-            --verify-tag \
-            --generate-notes \
-            --notes "![LensGuard banner]($banner_url)" \
-            --title "LensGuard ${GITHUB_REF_NAME#v}"

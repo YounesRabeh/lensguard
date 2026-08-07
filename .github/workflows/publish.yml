@@ -1,0 +1,136 @@
+name: Publish release draft
+
+on:
+  workflow_run:
+    workflows:
+      - Release candidate
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: Successful Release candidate workflow run ID to publish
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-${{ github.event.workflow_run.id || inputs.release_run_id }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish verified portable artifacts
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Resolve successful release run
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_RUN_ID: ${{ github.event.workflow_run.id || inputs.release_run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! $REQUESTED_RUN_ID =~ ^[1-9][0-9]*$ ]]; then
+            printf 'Invalid release workflow run ID: %s\n' "$REQUESTED_RUN_ID" >&2
+            exit 1
+          fi
+          run=$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_RUN_ID")
+          test "$(jq -r .name <<<"$run")" = 'Release candidate'
+          test "$(jq -r .event <<<"$run")" = 'push'
+          test "$(jq -r .status <<<"$run")" = 'completed'
+          test "$(jq -r .conclusion <<<"$run")" = 'success'
+          release_tag=$(jq -r .head_branch <<<"$run")
+          release_sha=$(jq -r .head_sha <<<"$run")
+          if [[ ! $release_tag =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            printf 'Release run does not target a stable semantic tag: %s\n' "$release_tag" >&2
+            exit 1
+          fi
+          {
+            printf 'run_id=%s\n' "$REQUESTED_RUN_ID"
+            printf 'tag=%s\n' "$release_tag"
+            printf 'sha=%s\n' "$release_sha"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check out verified release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify successful release identity
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test "$RELEASE_TAG" = "v$(./scripts/project-version.sh)"
+
+      - name: Download verified release bundle
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.release.outputs.run_id }}
+          name: lensguard-release-${{ steps.release.outputs.tag }}
+          path: release-artifacts
+
+      - name: Verify bundle and select portable artifacts
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd release-artifacts
+            sha256sum --check SHA256SUMS
+          )
+
+          version=${RELEASE_TAG#v}
+          mkdir -p publish-assets
+          mapfile -t portable_assets < <(
+            find release-artifacts -maxdepth 1 -type f \
+              \( -name "lensguard-extension-v$version.zip" \
+              -o -name "lensguard_${version}_amd64.deb" \
+              -o -name "lensguard-$version-*.x86_64.rpm" \
+              -o -name "lensguard-$version-*-x86_64.pkg.tar.zst" \) \
+              -print | sort
+          )
+          if ((${#portable_assets[@]} != 4)); then
+            printf 'Expected exactly four portable artifacts, found %s:\n' \
+              "${#portable_assets[@]}" >&2
+            printf '  %s\n' "${portable_assets[@]}" >&2
+            exit 1
+          fi
+          cp -- "${portable_assets[@]}" publish-assets/
+
+      - name: Create or replace draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if draft=$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [[ $draft != true ]]; then
+              printf 'Refusing to modify published release %s.\n' "$RELEASE_TAG" >&2
+              exit 1
+            fi
+            gh release delete "$RELEASE_TAG" --yes
+          fi
+          gh release create "$RELEASE_TAG" publish-assets/* \
+            --draft \
+            --verify-tag \
+            --generate-notes \
+            --title "LensGuard ${RELEASE_TAG#v}"
