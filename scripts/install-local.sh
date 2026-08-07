@@ -72,6 +72,8 @@ systemd_dir=$config_home/systemd/user
 dbus_service_dir=$data_home/dbus-1/services
 extension_parent=$data_home/gnome-shell/extensions
 extension_dir=$extension_parent/$uuid
+unit_marker=$systemd_dir/$unit_name.lensguard-owned
+dbus_service_marker=$dbus_service_dir/$bus_name.service.lensguard-owned
 
 stage=$(mktemp -d --tmpdir lensguard-install.XXXXXX)
 cleanup() {
@@ -101,16 +103,51 @@ sed "s|@EXECUTABLE@|$escaped_executable|g" \
 sed "s|@EXECUTABLE@|$escaped_executable|g" \
     "$repo_root/systemd/$bus_name.service.in" > "$stage/$bus_name.service"
 
+is_owned() {
+    local marker=$1
+    [[ -f $marker ]] && [[ $(<"$marker") == "$ownership_marker" ]]
+}
+
+legacy_install_owned=false
+if is_owned "$libexec_dir/.lensguard-owned"; then
+    legacy_install_owned=true
+fi
+
+[[ ! -L $libexec_dir ]] || die "refusing to use symbolic-link daemon directory: $libexec_dir"
+[[ ! -L $executable ]] || die "refusing to replace symbolic-link daemon executable: $executable"
+if [[ -e $executable || -L $executable ]]; then
+    $legacy_install_owned || die "refusing to replace unowned daemon executable: $executable"
+fi
+[[ ! -L $systemd_dir/$unit_name ]] || \
+    die "refusing to replace symbolic-link user unit: $systemd_dir/$unit_name"
+if [[ -e $systemd_dir/$unit_name || -L $systemd_dir/$unit_name ]]; then
+    if ! is_owned "$unit_marker" && ! $legacy_install_owned; then
+        die "refusing to replace unowned user unit: $systemd_dir/$unit_name"
+    fi
+fi
+[[ ! -L $dbus_service_dir/$bus_name.service ]] || \
+    die "refusing to replace symbolic-link D-Bus activation file: $dbus_service_dir/$bus_name.service"
+if [[ -e $dbus_service_dir/$bus_name.service || -L $dbus_service_dir/$bus_name.service ]]; then
+    if ! is_owned "$dbus_service_marker" && ! $legacy_install_owned; then
+        die "refusing to replace unowned D-Bus activation file: $dbus_service_dir/$bus_name.service"
+    fi
+fi
+if [[ -e $extension_dir || -L $extension_dir ]]; then
+    if [[ -L $extension_dir ]]; then
+        die "refusing to replace symbolic-link extension directory: $extension_dir"
+    fi
+    is_owned "$extension_dir/.lensguard-owned" || \
+        die "refusing to replace unowned extension directory: $extension_dir"
+fi
+
 install -d -m 0755 -- "$libexec_dir" "$systemd_dir" "$dbus_service_dir" "$extension_parent"
 install -m 0755 -- "$artifact" "$stage/camera-monitor"
 mv -f -- "$stage/camera-monitor" "$executable"
 printf '%s\n' "$ownership_marker" > "$libexec_dir/.lensguard-owned"
 install -m 0644 -- "$stage/$unit_name" "$systemd_dir/$unit_name"
+printf '%s\n' "$ownership_marker" > "$unit_marker"
 install -m 0644 -- "$stage/$bus_name.service" "$dbus_service_dir/$bus_name.service"
-
-if [[ -L $extension_dir ]]; then
-    die "refusing to replace symbolic-link extension directory: $extension_dir"
-fi
+printf '%s\n' "$ownership_marker" > "$dbus_service_marker"
 rm -rf -- "$extension_dir"
 mv -- "$stage/extension" "$extension_dir"
 

@@ -1,0 +1,512 @@
+name: Release candidate
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Validate tag and run CI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify semantic tag, version, and main ancestry
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            printf 'release tag must be a stable semantic version such as v1.3.0: %s\n' \
+              "$GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          version=$(./scripts/project-version.sh)
+          test "$GITHUB_REF_NAME" = "v$version"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main
+          previous_tag=$(gh release list --exclude-drafts --exclude-pre-releases \
+            --limit 100 --json tagName \
+            --jq '.[] | .tagName | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' | \
+            sort -V | tail -n 1)
+          if [[ -n $previous_tag ]]; then
+            previous_version=${previous_tag#v}
+            newest=$(printf '%s\n%s\n' "$previous_version" "$version" | sort -V | tail -n 1)
+            if [[ $newest != "$version" || $previous_version == "$version" ]]; then
+              printf 'release version %s must be newer than published version %s\n' \
+                "$version" "$previous_version" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            dbus-daemon \
+            gjs \
+            gnome-shell \
+            jq \
+            libclang-dev \
+            libglib2.0-bin \
+            libpipewire-0.3-dev \
+            make \
+            pkg-config \
+            ripgrep \
+            shellcheck \
+            unzip
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.85.0
+          components: clippy, rustfmt
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+        with:
+          version: 11
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run repository checks
+        run: make check
+
+  package-core:
+    name: Build extension and release metadata
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            gnome-shell \
+            jq \
+            libclang-dev \
+            libpipewire-0.3-dev \
+            pkg-config \
+            ripgrep \
+            rpm \
+            unzip
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.85.0
+
+      - name: Build complete core release artifacts
+        shell: bash
+        run: |
+          ./scripts/package-release.sh dist/release-artifacts --skip-rpm
+
+      - name: Upload core release artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: lensguard-core
+          path: dist/release-artifacts/
+          if-no-files-found: error
+          retention-days: 14
+
+  package-deb:
+    name: Build and install-test DEB
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install build and test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            dbus-daemon \
+            dpkg-dev \
+            gjs \
+            gnome-shell \
+            jq \
+            libclang-dev \
+            libglib2.0-bin \
+            libpipewire-0.3-dev \
+            lintian \
+            pkg-config \
+            unzip
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.85.0
+
+      - name: Download previous stable DEB when available
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/previous/deb
+          previous_tag=$(gh release list --exclude-drafts --exclude-pre-releases \
+            --limit 100 --json tagName \
+            --jq '.[] | .tagName | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' | \
+            sort -V | tail -n 1)
+          if [[ -n $previous_tag ]]; then
+            asset=$(gh release view "$previous_tag" --json assets \
+              --jq '[.assets[].name | select(test("^lensguard_.*_amd64\\.deb$"))][0] // ""')
+            if [[ -n $asset ]]; then
+              gh release download "$previous_tag" --pattern "$asset" --dir dist/previous/deb
+            else
+              printf 'Previous release %s has no DEB artifact; upgrade test skipped.\n' "$previous_tag"
+            fi
+          fi
+
+      - name: Build and lint DEB
+        run: |
+          make package-deb
+          package=$(find dist/packages/deb -maxdepth 1 -type f -name '*.deb' -print -quit)
+          lintian --fail-on error "$package"
+
+      - name: Install, upgrade, activate, and uninstall DEB on Ubuntu 26.04
+        shell: bash
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/src" \
+            docker.io/library/ubuntu:26.04@sha256:678c6550cc43645e08669028bc177f50be4e7c5b8cca677067b1914d4afc7a03 \
+            bash -lc '
+              set -euo pipefail
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install --yes ca-certificates dbus-daemon jq
+              current=$(find /src/dist/packages/deb -maxdepth 1 -type f \
+                -name "*.deb" -print -quit)
+              previous=$(find /src/dist/previous/deb -maxdepth 1 -type f \
+                -name "*.deb" -print -quit || true)
+              upgrade_home=/tmp/lensguard-upgrade-settings
+              if [[ -n $previous ]]; then
+                previous_version=$(dpkg-deb --field "$previous" Version)
+                apt-get install --yes "$previous"
+                /src/scripts/test-installed-system-package.sh \
+                  --version "$previous_version" \
+                  --daemon-path /usr/lib/lensguard/camera-monitor
+                /src/scripts/test-system-package-upgrade-settings.sh write "$upgrade_home"
+              fi
+              apt-get install --yes "$current"
+              version=$(/src/scripts/project-version.sh)
+              /src/scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/lib/lensguard/camera-monitor
+              if [[ -n $previous ]]; then
+                /src/scripts/test-system-package-upgrade-settings.sh check "$upgrade_home"
+              fi
+              apt-get remove --purge --yes lensguard
+              /src/scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/lib/lensguard/camera-monitor \
+                --expect-removed
+            '
+
+      - name: Upload tested DEB
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: lensguard-deb
+          path: dist/packages/deb/
+          if-no-files-found: error
+          retention-days: 14
+
+  package-rpm:
+    name: Build and install-test RPM
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Download previous stable RPM when available
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/previous/rpm
+          previous_tag=$(gh release list --exclude-drafts --exclude-pre-releases \
+            --limit 100 --json tagName \
+            --jq '.[] | .tagName | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' | \
+            sort -V | tail -n 1)
+          if [[ -n $previous_tag ]]; then
+            asset=$(gh release view "$previous_tag" --json assets \
+              --jq '[.assets[].name | select(test("^lensguard-[0-9]+\\.[0-9]+\\.[0-9]+-.+\\.x86_64\\.rpm$"))][0] // ""')
+            if [[ -n $asset ]]; then
+              gh release download "$previous_tag" --pattern "$asset" --dir dist/previous/rpm
+            else
+              printf 'Previous release %s has no RPM artifact; upgrade test skipped.\n' "$previous_tag"
+            fi
+          fi
+
+      - name: Build, lint, install, upgrade, activate, and uninstall RPM
+        shell: bash
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/src" \
+            docker.io/library/fedora:44@sha256:6c75d5bf57cb0fa5aa4b92c6a83c86c791644496d9ac230de7711f5b8ec3b898 \
+            bash -lc '
+              set -euo pipefail
+              dnf --assumeyes --setopt=install_weak_deps=False install \
+                cargo rust clang pkgconf-pkg-config pipewire-devel \
+                dbus-daemon gjs gnome-shell glib2 jq unzip git make \
+                rpm-build rpmlint systemd-rpm-macros tar findutils ripgrep
+              mkdir -p /build/lensguard /src/dist/packages/rpm
+              cp -a /src/. /build/lensguard/
+              cd /build/lensguard
+              make package-rpm
+              cp -a dist/packages/rpm/. /src/dist/packages/rpm/
+              version=$(./scripts/project-version.sh)
+              current=$(find /src/dist/packages/rpm -maxdepth 1 -type f \
+                -name "lensguard-$version-*.x86_64.rpm" -print -quit)
+              mapfile -t rpm_artifacts < <(find /src/dist/packages/rpm -maxdepth 1 \
+                -type f -name "*.rpm" -print | sort)
+              ((${#rpm_artifacts[@]} >= 4))
+              rendered_spec=/src/dist/packages/rpm/lensguard-$version.spec
+              rpmlint "$rendered_spec" "${rpm_artifacts[@]}"
+              previous=$(find /src/dist/previous/rpm -maxdepth 1 -type f \
+                -name "*.x86_64.rpm" -print -quit || true)
+              upgrade_home=/tmp/lensguard-upgrade-settings
+              if [[ -n $previous ]]; then
+                previous_version=$(rpm -qp --queryformat "%{VERSION}" "$previous")
+                dnf --assumeyes install "$previous"
+                ./scripts/test-installed-system-package.sh \
+                  --version "$previous_version" \
+                  --daemon-path /usr/libexec/lensguard/camera-monitor
+                ./scripts/test-system-package-upgrade-settings.sh write "$upgrade_home"
+              fi
+              dnf --assumeyes install "$current"
+              ./scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/libexec/lensguard/camera-monitor
+              if [[ -n $previous ]]; then
+                ./scripts/test-system-package-upgrade-settings.sh check "$upgrade_home"
+              fi
+              dnf --assumeyes remove lensguard
+              ./scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/libexec/lensguard/camera-monitor \
+                --expect-removed
+            '
+
+      - name: Upload tested RPMs
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: lensguard-rpm
+          path: dist/packages/rpm/
+          if-no-files-found: error
+          retention-days: 14
+
+  package-arch:
+    name: Build and install-test Arch package
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Download previous stable Arch package when available
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/previous/arch
+          previous_tag=$(gh release list --exclude-drafts --exclude-pre-releases \
+            --limit 100 --json tagName \
+            --jq '.[] | .tagName | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))' | \
+            sort -V | tail -n 1)
+          if [[ -n $previous_tag ]]; then
+            asset=$(gh release view "$previous_tag" --json assets \
+              --jq '[.assets[].name | select(test("^lensguard-.*-x86_64\\.pkg\\.tar\\..*$"))][0] // ""')
+            if [[ -n $asset ]]; then
+              gh release download "$previous_tag" --pattern "$asset" --dir dist/previous/arch
+            else
+              printf 'Previous release %s has no Arch artifact; upgrade test skipped.\n' "$previous_tag"
+            fi
+          fi
+
+      - name: Build, lint, install, upgrade, activate, and uninstall Arch package
+        shell: bash
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/src" \
+            docker.io/library/archlinux:base-devel@sha256:c1829f370be8434135f43fb3acaef1256780804ac3b2d2eec90dfb1232e1ffdf \
+            bash -lc '
+              set -euo pipefail
+              pacman --sync --refresh --sysupgrade --noconfirm --needed \
+                cargo rust clang pkgconf pipewire dbus gjs gnome-shell \
+                glib2 jq unzip git namcap
+              id --user builder >/dev/null 2>&1 || useradd --create-home builder
+              mkdir -p /build/lensguard /src/dist/packages/arch
+              cp -a /src/. /build/lensguard/
+              chown --recursive builder:builder /build/lensguard
+              runuser --user builder -- make -C /build/lensguard package-arch
+              cp -a /build/lensguard/dist/packages/arch/. /src/dist/packages/arch/
+              cd /build/lensguard
+              current=$(find /src/dist/packages/arch -maxdepth 1 -type f \
+                -name "*.pkg.tar.*" -print -quit)
+              version=$(./scripts/project-version.sh)
+              generated_pkgbuild=/src/dist/packages/arch/lensguard-$version-PKGBUILD
+              namcap "$generated_pkgbuild" "$current" | tee /tmp/lensguard-namcap.log
+              if grep -Eq '(^|[[:space:]])E:' /tmp/lensguard-namcap.log; then
+                exit 1
+              fi
+              previous=$(find /src/dist/previous/arch -maxdepth 1 -type f \
+                -name "*.pkg.tar.*" -print -quit || true)
+              upgrade_home=/tmp/lensguard-upgrade-settings
+              if [[ -n $previous ]]; then
+                previous_pkgver=$(bsdtar -xOf "$previous" .PKGINFO | \
+                  sed -n "s/^pkgver = //p")
+                previous_version=${previous_pkgver%-*}
+                pacman --upgrade --noconfirm "$previous"
+                ./scripts/test-installed-system-package.sh \
+                  --version "$previous_version" \
+                  --daemon-path /usr/lib/lensguard/camera-monitor
+                ./scripts/test-system-package-upgrade-settings.sh write "$upgrade_home"
+              fi
+              pacman --upgrade --noconfirm "$current"
+              version=$(./scripts/project-version.sh)
+              ./scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/lib/lensguard/camera-monitor
+              if [[ -n $previous ]]; then
+                ./scripts/test-system-package-upgrade-settings.sh check "$upgrade_home"
+              fi
+              pacman --remove --noconfirm lensguard
+              ./scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/lib/lensguard/camera-monitor \
+                --expect-removed
+            '
+
+      - name: Upload tested Arch package
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: lensguard-arch
+          path: dist/packages/arch/
+          if-no-files-found: error
+          retention-days: 14
+
+  draft-release:
+    name: Assemble verified draft release
+    needs:
+      - package-core
+      - package-deb
+      - package-rpm
+      - package-arch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install artifact validation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            dpkg-dev \
+            jq \
+            libarchive-tools \
+            rpm \
+            unzip
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        with:
+          toolchain: 1.85.0
+
+      - name: Download tested artifacts
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: lensguard-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Verify complete release bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fetch --locked
+          (
+            cd release-artifacts
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\n' | \
+              sort | xargs -r sha256sum > SHA256SUMS
+          )
+          ./scripts/check-release.sh release-artifacts
+          ./scripts/check-package-artifacts.sh release-artifacts
+
+      - name: Upload complete verified bundle
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: lensguard-release-${{ github.ref_name }}
+          path: release-artifacts/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create or update draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if draft=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [[ $draft != true ]]; then
+              printf 'Refusing to modify existing published release %s.\n' "$GITHUB_REF_NAME" >&2
+              exit 1
+            fi
+            gh release delete "$GITHUB_REF_NAME" --yes
+          fi
+          gh release create "$GITHUB_REF_NAME" release-artifacts/* \
+            --draft \
+            --verify-tag \
+            --generate-notes \
+            --title "LensGuard ${GITHUB_REF_NAME#v}"

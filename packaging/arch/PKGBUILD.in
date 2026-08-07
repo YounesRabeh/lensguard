@@ -1,0 +1,17 @@
+# Maintainer: Younes Rabeh <younesrabeh@users.noreply.github.com>
+pkgname=lensguard
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc='GNOME Shell camera privacy indicator'
+arch=('@ARCHITECTURE@')
+url='https://github.com/YounesRabeh/lensguard'
+license=('MIT')
+depends=('dbus' 'gnome-shell>=50' 'pipewire' 'systemd')
+source=('lensguard-root.tar.gz')
+sha256sums=('@SHA256@')
+options=('strip' '!debug')
+
+package() {
+    install -d "$pkgdir"
+    cp -a "$srcdir/root/." "$pkgdir/"
+}

@@ -43,26 +43,46 @@ libexec_dir=$HOME/.local/libexec/lensguard
 systemd_dir=$config_home/systemd/user
 dbus_service_dir=$data_home/dbus-1/services
 extension_dir=$data_home/gnome-shell/extensions/$uuid
+unit_marker=$systemd_dir/$unit_name.lensguard-owned
+dbus_service_marker=$dbus_service_dir/$bus_name.service.lensguard-owned
 
-if $use_user_manager && command -v systemctl >/dev/null; then
+is_owned() {
+    local marker=$1
+    [[ -f $marker ]] && [[ $(<"$marker") == "$ownership_marker" ]]
+}
+
+legacy_install_owned=false
+if is_owned "$libexec_dir/.lensguard-owned"; then
+    legacy_install_owned=true
+fi
+
+installation_owned=$legacy_install_owned
+if is_owned "$unit_marker" || \
+    is_owned "$dbus_service_marker" || \
+    is_owned "$extension_dir/.lensguard-owned"; then
+    installation_owned=true
+fi
+
+if $installation_owned && $use_user_manager && command -v systemctl >/dev/null; then
     systemctl --user stop "$unit_name" >/dev/null 2>&1 || true
 fi
-if $use_user_manager && command -v gnome-extensions >/dev/null; then
+if $installation_owned && $use_user_manager && command -v gnome-extensions >/dev/null; then
     gnome-extensions disable "$uuid" >/dev/null 2>&1 || true
 fi
 
-rm -f -- \
-    "$systemd_dir/$unit_name" \
-    "$dbus_service_dir/$bus_name.service"
+if is_owned "$unit_marker" || $legacy_install_owned; then
+    rm -f -- "$systemd_dir/$unit_name" "$unit_marker"
+fi
+if is_owned "$dbus_service_marker" || $legacy_install_owned; then
+    rm -f -- "$dbus_service_dir/$bus_name.service" "$dbus_service_marker"
+fi
 
-if [[ -f $libexec_dir/.lensguard-owned ]] &&
-    [[ $(<"$libexec_dir/.lensguard-owned") == "$ownership_marker" ]]; then
+if $legacy_install_owned; then
     rm -f -- "$libexec_dir/camera-monitor" "$libexec_dir/.lensguard-owned"
     rmdir -- "$libexec_dir" 2>/dev/null || true
 fi
 
-if [[ -f $extension_dir/.lensguard-owned ]] &&
-    [[ $(<"$extension_dir/.lensguard-owned") == "$ownership_marker" ]]; then
+if is_owned "$extension_dir/.lensguard-owned"; then
     rm -rf -- "$extension_dir"
 fi
 

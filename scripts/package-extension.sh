@@ -4,15 +4,7 @@ set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 output_arg=${1:-dist}
 
-workspace_version=$(awk '
-    /^\[workspace\.package\]$/ { inside = 1; next }
-    inside && /^\[/ { exit }
-    inside && $1 == "version" {
-        gsub(/"/, "", $3)
-        print $3
-        exit
-    }
-' "$repo_root/Cargo.toml")
+workspace_version=$("$repo_root/scripts/project-version.sh")
 if [[ -z $workspace_version ]]; then
     printf '%s\n' 'could not read [workspace.package] version from Cargo.toml' >&2
     exit 1
@@ -73,5 +65,11 @@ for required_file in \
         exit 1
     fi
 done
+
+if grep -Eq '(^|/)(tests?|fixtures|mocks?)/|mockDataProvider|gnomeSmoke|gnomeScreenshot' \
+    <<<"$archive_entries"; then
+    printf '%s\n' 'extension package contains development-only files' >&2
+    exit 1
+fi
 
 printf '%s\n' "Created $archive"

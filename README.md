@@ -1,4 +1,4 @@
-![banner](.github/lensguard.png)
+![banner](docs/images/lensguard-banner.png)
 
 LensGuard is a GNOME Shell camera-privacy indicator backed by an unprivileged Rust user daemon. It
 observes active camera capture through PipeWire and exposes session state to a GNOME Shell
@@ -34,10 +34,12 @@ make bootstrap
 pnpm install --frozen-lockfile
 make check
 cargo run -p camera-monitor -- --version
-cargo run -p camera-monitor -- --log-level info run
+# Runs the foreground daemon for 10 seconds, then stops it automatically.
+timeout 10s cargo run -p camera-monitor -- --log-level info run
 cargo run -p camera-monitor -- inspect-pipewire
-cargo run -p camera-monitor -- watch-pipewire
-cargo run -p camera-monitor -- serve-dbus
+# Each watcher below runs for 10 seconds, then stops automatically.
+timeout 10s cargo run -p camera-monitor -- watch-pipewire
+timeout 10s cargo run -p camera-monitor -- serve-dbus
 ```
 
 Install the finished application for the current user without root:

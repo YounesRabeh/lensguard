@@ -1,0 +1,12 @@
+Package: lensguard
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: @ARCHITECTURE@
+Installed-Size: @INSTALLED_SIZE@
+Depends: dbus, gnome-shell (>= 50), pipewire, systemd
+Maintainer: Younes Rabeh <younesrabeh@users.noreply.github.com>
+Homepage: https://github.com/younesrabeh/lensguard
+Description: GNOME Shell camera privacy indicator
+ LensGuard monitors active camera capture through PipeWire and shows the
+ applications using the camera through a GNOME Shell extension.

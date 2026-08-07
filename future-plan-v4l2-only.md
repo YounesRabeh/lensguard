@@ -1,11 +1,4 @@
 # Future plan: direct V4L2 camera-access detection
-
-## Timing
-
-Do not begin this work before `Plan.md` Step 14 is complete and the v1.0 release is stable.
-
-This is post-v1.0 work focused exclusively on direct V4L2 camera-access detection. It does not use PipeWire or WirePlumber for detection, correlation, availability, or session state.
-
 ## Product model
 
 LensGuard will use one camera-detection path:

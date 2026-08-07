@@ -8,7 +8,7 @@ bus_name=io.github.younesrabeh.CameraMonitor
 object_path=/io/github/younesrabeh/CameraMonitor
 interface_name=io.github.younesrabeh.CameraMonitor1
 
-for command_name in dbus-run-session gdbus glib-compile-schemas sha256sum timeout; do
+for command_name in dbus-run-session gdbus glib-compile-schemas gsettings sha256sum timeout; do
     command -v "$command_name" >/dev/null || {
         printf 'test-local-installation.sh: required command not found: %s\n' "$command_name" >&2
         exit 1
@@ -56,11 +56,18 @@ installed_binary=$test_home/.local/libexec/lensguard/camera-monitor
 installed_unit=$config_home/systemd/user/camera-monitor.service
 installed_activation=$data_home/dbus-1/services/$bus_name.service
 installed_extension=$data_home/gnome-shell/extensions/$uuid
+installed_unit_marker=$installed_unit.lensguard-owned
+installed_activation_marker=$installed_activation.lensguard-owned
 [[ -x $installed_binary ]]
 [[ -f $installed_unit ]]
+[[ -f $installed_unit_marker ]]
 [[ -f $installed_activation ]]
+[[ -f $installed_activation_marker ]]
 [[ -f $installed_extension/schemas/gschemas.compiled ]]
 [[ -f $installed_extension/.lensguard-owned ]]
+version=$("$repo_root/scripts/project-version.sh")
+[[ $("$installed_binary" --version) == "camera-monitor $version" ]]
+grep -Fq '"version-name": "'"$version"'"' "$installed_extension/metadata.json"
 grep -Fq 'Type=dbus' "$installed_unit"
 grep -Fq 'BusName=io.github.younesrabeh.CameraMonitor' "$installed_unit"
 grep -Fq 'Restart=on-failure' "$installed_unit"
@@ -71,12 +78,31 @@ if grep -RqE '(^|[[:space:]])(sudo|pkexec)([[:space:]]|$)' \
     exit 1
 fi
 
+env \
+    HOME="$test_home" \
+    XDG_CONFIG_HOME="$config_home" \
+    GSETTINGS_BACKEND=keyfile \
+    GSETTINGS_SCHEMA_DIR="$installed_extension/schemas" \
+    gsettings set org.gnome.shell.extensions.lensguard show-panel-indicator false
+
 sha256sum "$installed_binary" "$installed_unit" "$installed_activation" \
     > "$test_root/first-install.sha256"
+# Older local installs only marked the daemon and extension directories. Verify
+# they can upgrade once and receive the new per-service ownership markers.
+rm -f -- "$installed_unit_marker" "$installed_activation_marker"
 run_installer >/dev/null
+[[ -f $installed_unit_marker ]]
+[[ -f $installed_activation_marker ]]
 sha256sum "$installed_binary" "$installed_unit" "$installed_activation" \
     > "$test_root/second-install.sha256"
 cmp "$test_root/first-install.sha256" "$test_root/second-install.sha256"
+saved_preference=$(env \
+    HOME="$test_home" \
+    XDG_CONFIG_HOME="$config_home" \
+    GSETTINGS_BACKEND=keyfile \
+    GSETTINGS_SCHEMA_DIR="$installed_extension/schemas" \
+    gsettings get org.gnome.shell.extensions.lensguard show-panel-indicator)
+[[ $saved_preference == false ]]
 [[ $(find "$data_home/gnome-shell/extensions" -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 1 ]]
 
 activate_once() {
@@ -107,13 +133,32 @@ activate_once
 run_uninstaller >/dev/null
 [[ ! -e $installed_binary ]]
 [[ ! -e $installed_unit ]]
+[[ ! -e $installed_unit_marker ]]
 [[ ! -e $installed_activation ]]
+[[ ! -e $installed_activation_marker ]]
 [[ ! -e $installed_extension ]]
 [[ -f $data_home/unrelated-sentinel ]]
 run_uninstaller >/dev/null
 [[ -f $data_home/unrelated-sentinel ]]
 
+mkdir -p -- "$installed_extension" "$(dirname -- "$installed_unit")" "$(dirname -- "$installed_activation")"
+printf '%s\n' 'unowned extension data' > "$installed_extension/sentinel"
+printf '%s\n' 'unowned user unit' > "$installed_unit"
+printf '%s\n' 'unowned D-Bus service' > "$installed_activation"
+
+if run_installer >"$test_root/unowned-install.stdout" 2>"$test_root/unowned-install.stderr"; then
+    printf '%s\n' 'installer replaced an unowned installation' >&2
+    exit 1
+fi
+grep -Fq 'refusing to replace unowned user unit' "$test_root/unowned-install.stderr"
+run_uninstaller >/dev/null
+grep -Fxq 'unowned extension data' "$installed_extension/sentinel"
+grep -Fxq 'unowned user unit' "$installed_unit"
+grep -Fxq 'unowned D-Bus service' "$installed_activation"
+
 printf '%s\n' \
     'Fresh and repeated local installation tests passed.' \
+    'Upgrade preserved the extension preference.' \
     'Cold D-Bus activation and bus-name acquisition passed in two fresh sessions.' \
-    'Fresh and repeated uninstall tests passed without removing unrelated files.'
+    'Fresh and repeated uninstall tests passed without removing unrelated files.' \
+    'Install and uninstall preserved unowned conflicting files.'

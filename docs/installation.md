@@ -80,5 +80,22 @@ unit directory, install the D-Bus service under its session-service directory, a
 extension and compiled schema according to distribution policy. A package replacing a local
 installation should run the local uninstaller first so file precedence is unambiguous.
 
+The repository provides package build commands for the main Linux distribution families:
+
+```sh
+make package-rpm   # Fedora, RHEL, openSUSE
+make package-deb   # Debian, Ubuntu, Linux Mint, Pop!_OS
+make package-arch  # Arch, Manjaro, EndeavourOS
+```
+
+Each command creates an artifact under `dist/packages/` and builds the release daemon for the
+current architecture. Run the command in a matching distribution environment (or its container or
+CI runner): a Fedora-built daemon is not guaranteed to run on an older Debian or Ubuntu release.
+The required native builders are `rpmbuild`, `dpkg-deb`, and `makepkg`, respectively.
+
+Pushing a version tag in the form `v<workspace-version>` (for example, `v1.3.0`) runs the release
+workflow. It verifies the full check suite, builds the extension bundle plus DEB, RPM, and Arch
+packages in their matching environments, then attaches the artifacts to a generated GitHub Release.
+
 `scripts/install-local.sh --artifact PATH --no-user-manager` is available for staged tests and
 packaging validation; ordinary users should use `make install-local`.
