@@ -3,6 +3,7 @@ set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 version=$("$repo_root/scripts/project-version.sh")
+release_tag=v$version
 output_dir=${1:-$repo_root/dist/release/$version}
 require_rpm=false
 skip_rpm=false
@@ -37,7 +38,7 @@ trap cleanup EXIT
 extension_dir=$work_dir/extension
 "$repo_root/scripts/package-extension.sh" "$extension_dir"
 cp -- "$extension_dir/lensguard@younesrabeh.github.io.shell-extension.zip" \
-    "$output_dir/lensguard-extension-$version.zip"
+    "$output_dir/lensguard-extension-$release_tag.zip"
 
 cargo build --locked --release -p camera-monitor --manifest-path "$repo_root/Cargo.toml"
 cargo_target=${CARGO_TARGET_DIR:-$repo_root/target}

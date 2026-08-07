@@ -25,7 +25,7 @@ for command_name in cargo jq rpm sha256sum tar unzip; do
 done
 
 binary=$(find "$release_dir" -maxdepth 1 -type f -name "camera-monitor-$version-*" -print -quit)
-extension=$release_dir/lensguard-extension-$version.zip
+extension=$release_dir/lensguard-extension-v$version.zip
 source_archive=$release_dir/lensguard-$version-source.tar.gz
 license_report=$release_dir/lensguard-$version-dependency-licenses.tsv
 for artifact in "$binary" "$extension" "$source_archive" "$license_report" \

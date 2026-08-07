@@ -41,7 +41,7 @@ Artifacts are written under `dist/release/<version>/`:
 - `lensguard-<version>-*.src.rpm`: Fedora package source;
 - `lensguard-<version>.spec`: concrete, independently reusable Fedora spec;
 - `lensguard-debuginfo-<version>-*.rpm` and `lensguard-debugsource-<version>-*.rpm`: Fedora debugging packages;
-- `lensguard-extension-<version>.zip`: standalone GNOME extension;
+- `lensguard-extension-v<version>.zip`: standalone GNOME extension;
 - `camera-monitor-<version>-<architecture>`: release daemon diagnostic artifact;
 - `lensguard-<version>-source.tar.gz`: reproducible source snapshot;
 - `lensguard-<version>-dependency-licenses.tsv`: locked dependency attribution report;
