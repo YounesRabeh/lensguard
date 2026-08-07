@@ -1,78 +1,54 @@
-![banner](docs/images/lensguard-banner.png)
+![Lens Guard](docs/images/lensguard-banner.png)
 
-LensGuard is a GNOME Shell camera-privacy indicator backed by an unprivileged Rust user daemon. It
-observes active camera capture through PipeWire and exposes session state to a GNOME Shell
-extension over the user D-Bus.
+See which applications are using your camera, right from the GNOME desktop.
 
-## Architecture
+Lens Guard is a small, privacy-focused GNOME Shell extension for Linux. When your camera is
+active, it shows a clear indicator and lets you see the application and camera involved from
+Quick Settings. When nothing is using the camera, the menu stays quiet.
 
-The project has completed its first vertical MVP slice. The functional user daemon observes and
-classifies the current `PipeWire` graph, resolves application identity away from native callbacks,
-maintains camera session state, and publishes it through the stable user-session D-Bus contract.
-The GNOME Shell extension asynchronously follows that live service, shows active applications and
-cameras in Quick Settings, clears stale state across daemon loss and restart, and provides an
-Adwaita preferences window for backend-failure presentation.
+![Lens Guard showing active camera sessions](docs/images/step10-active-sessions.png)
 
-The repository follows ports and adapters:
+## Why Lens Guard?
 
-- `camera-core` owns pure domain models, idempotent event reduction, ordered snapshots, and port
-  traits without desktop dependencies.
-- `camera-pipewire` adapts PipeWire graph events to the domain boundary.
-- `camera-app-resolver` resolves process, desktop-entry, and Flatpak application identity.
-- `camera-dbus` translates internal snapshots and events into a stable user-session D-Bus API.
-- `camera-monitor` is the daemon composition root and owns task lifecycle and recovery.
-- `extension/` contains the GNOME Shell client and must communicate with the daemon only over
-  the documented D-Bus contract.
+- Know when your camera is being used without opening another application.
+- See the active application and camera in one place.
+- Get a visible unavailable state when monitoring cannot be confirmed.
+- Keep your camera information local to your user session, no account or cloud service is needed.
 
-Infrastructure-specific types must not leak into `camera-core`, and D-Bus data-transfer objects
-must remain separate from domain entities.
+> [!NOTE]
+> Lens Guard uses the same user session that GNOME and PipeWire use. It does not need root access, sudo, or privileged camera permissions.
 
-## Quick start
+## Get started
 
-```sh
-make bootstrap
-pnpm install --frozen-lockfile
-make check
-cargo run -p camera-monitor -- --version
-# Runs the foreground daemon for 10 seconds, then stops it automatically.
-timeout 10s cargo run -p camera-monitor -- --log-level info run
-cargo run -p camera-monitor -- inspect-pipewire
-# Each watcher below runs for 10 seconds, then stops automatically.
-timeout 10s cargo run -p camera-monitor -- watch-pipewire
-timeout 10s cargo run -p camera-monitor -- serve-dbus
-```
+Install Lens Guard for your user account, then enable it in GNOME Extensions. The complete
+installation and removal instructions are in the [Getting started guide](docs/getting-started.md).
 
-Install the finished application for the current user without root:
+If you are installing from the source repository, see the [installation guide](docs/installation.md).
 
-```sh
-make install-local
-gnome-extensions enable lensguard@younesrabeh.github.io
-```
+## A note about detection
 
-See [docs/installation.md](docs/installation.md) for activation, journal, restart, packaging-path,
-and uninstall details.
+Lens Guard currently detects camera sessions that appear in PipeWire, which covers the normal
+GNOME desktop and most modern applications. Direct applications that open `/dev/video*` without
+PipeWire, and some virtual-camera or multi-hop setups, are not detected yet. See
+[known limitations](docs/troubleshooting.md#known-limitations-and-ambiguous-graph-cases) for the
+details and the planned direct-V4L2 work.
 
-See [docs/development.md](docs/development.md) for Fedora setup, recorded local versions, generic
-distribution guidance, and live extension test procedures. Implementation sequencing
-and scope are defined in [Plan.md](Plan.md). Domain invariants and dependency rules are documented
-in [docs/architecture.md](docs/architecture.md).
+## Screenshots
 
-The inspection command prints a one-time raw graph summary. The watcher prints correlated and
-identity-enriched domain start, update, and stop events. See
-[tests/manual/camera-session.md](tests/manual/camera-session.md) for live-session checks.
-Running with no command, or with `run`, starts the functional daemon. `serve-dbus` remains a
-transport-only diagnostic endpoint. The public wire contract and CLI examples are in
-[docs/dbus-api.md](docs/dbus-api.md).
+![Lens Guard reporting that camera monitoring is unavailable](docs/images/step10-backend-unavailable.png)
 
-## Interface
+Open the Lens Guard item in Quick Settings and choose **Preferences** to customize the indicator
+and warning behavior. Notifications are intentionally not used.
 
-![LensGuard showing active camera sessions](docs/images/step10-active-sessions.png)
+## Learn more
 
-![LensGuard reporting that camera monitoring is unavailable](docs/images/step10-backend-unavailable.png)
-
-Open Quick Settings, expand LensGuard, and select **Preferences** to choose whether the LensGuard
-panel icon is shown, and how backend failures are presented. Hiding the panel icon leaves the
-Quick Settings tile and active-application list available. Notifications are not implemented.
+- [Getting started](docs/getting-started.md) — install, enable, update, and remove Lens Guard.
+- [Installation details](docs/installation.md) — service activation and distribution packages.
+- [Troubleshooting](docs/troubleshooting.md) — fixes for common camera and service issues.
+- [Development guide](docs/development.md) — build, test, and contribute locally.
+- [Architecture](docs/architecture.md) — how the extension and user daemon fit together.
+- [Release guide](docs/release.md) — maintainers' packaging and publishing process.
 
 ## License
-MIT. See [LICENSE](LICENSE).
+
+Lens Guard is free software released under the [MIT License](LICENSE).
