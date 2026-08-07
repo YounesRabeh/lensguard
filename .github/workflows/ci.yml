@@ -48,6 +48,9 @@ jobs:
           toolchain: 1.85.0
           components: clippy, rustfmt
 
+      - name: Fetch locked Rust dependencies
+        run: cargo fetch --locked
+
       - name: Set up pnpm
         uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
         with:
