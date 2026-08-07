@@ -1,4 +1,34 @@
-# Future plan: direct V4L2 camera-access detection
+# Future plan: V4L2-only camera-access detection
+
+## Product decision
+
+LensGuard will become a **direct-V4L2-only** camera monitor. Direct V4L2 capture is the sole
+supported source of camera-use state. The current PipeWire-based detector is deprecated and will
+be removed; it must not remain as a fallback, secondary signal, or requirement for normal camera
+detection.
+
+This replacement is intentionally a product migration, not an additional backend. Until the V4L2
+implementation meets the release criteria in this document, LensGuard must clearly report that
+monitoring is unavailable rather than combining incomplete V4L2 results with the retired backend.
+
+## PipeWire retirement scope
+
+The V4L2 migration is complete only when the repository and shipped packages no longer contain
+the PipeWire monitoring implementation. Remove:
+
+- the `camera-pipewire` crate and its workspace membership;
+- PipeWire, WirePlumber, SPA, and bindgen dependencies used solely for graph monitoring;
+- graph classifiers, relationship tracking, reconnect logic, and backend-specific D-Bus fields;
+- PipeWire diagnostic commands, fixtures, tests, manual test instructions, and screenshots that
+  describe graph detection;
+- PipeWire runtime and development dependencies from local installers, DEB/RPM/Arch packages,
+  CI images, and release validation; and
+- user-facing claims that LensGuard detects PipeWire sessions.
+
+Keep the unprivileged user daemon, application resolver, user-session D-Bus interface, GNOME
+extension, packaging discipline, and privacy guarantees, but adapt them to consume only validated
+direct-V4L2 observer events.
+
 ## Product model
 
 LensGuard will use one camera-detection path:
@@ -34,8 +64,8 @@ The implementation must remain metadata-only, local, reviewable, and narrowly pr
 
 ## Non-goals
 
-- Using PipeWire or WirePlumber for detection.
-- Correlating V4L2 events with PipeWire graph objects.
+- Using any graph-based or media-session-manager detection backend.
+- Combining V4L2 events with a second camera-detection source.
 - Making the GNOME Shell extension privileged.
 - Reporting a camera as active solely because `/dev/videoN` is open.
 - Reading, copying, hashing, decoding, mapping, or storing camera frames.
