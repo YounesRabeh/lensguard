@@ -40,6 +40,10 @@ while IFS= read -r -d '' source_path; do
         printf '%s\0' "$source_path"
     fi
 done < <(git -C "$repo_root" ls-files --cached --others --exclude-standard -z) > "$source_files"
+[[ -s $source_files ]] || {
+    printf '%s\n' 'package-rpm.sh: no source files were selected for the RPM source archive' >&2
+    exit 1
+}
 tar -C "$repo_root" -cf - --null --verbatim-files-from --files-from "$source_files" |
     tar -C "$source_root" -xf -
 

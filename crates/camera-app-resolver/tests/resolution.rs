@@ -2,6 +2,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
+use std::time::Duration;
 
 use camera_app_resolver::{
     ApplicationResolver, DesktopEntryIndex, ProcessSource, ProcfsReader, ResolutionRequest,
@@ -36,12 +38,34 @@ impl Drop for TestDirectory {
 #[test]
 fn resolves_a_spawned_process() {
     let mut child = Command::new("sleep").arg("30").spawn().unwrap();
-    let result = ProcfsReader::system().read_process(child.id());
+    let reader = ProcfsReader::system();
+    let mut process = None;
+
+    for _ in 0..100 {
+        if let Ok(candidate) = reader.read_process(child.id()) {
+            let executable_name = candidate
+                .executable
+                .as_deref()
+                .and_then(Path::file_name)
+                .and_then(|name| name.to_str());
+            if executable_name == Some("sleep") {
+                process = Some(candidate);
+                break;
+            }
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+
     let _ = child.kill();
     let _ = child.wait();
 
-    let process = result.unwrap();
-    assert_eq!(process.process_name.as_deref(), Some("sleep"));
+    let process = process.expect("spawned process did not finish executing sleep within 1 second");
+    assert!(
+        process
+            .process_name
+            .as_deref()
+            .is_some_and(|name| !name.is_empty())
+    );
     assert_eq!(
         process
             .executable

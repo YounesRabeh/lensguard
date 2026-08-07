@@ -4,7 +4,7 @@ set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 output_dir=$repo_root/dist/packages/deb
 
-for command_name in awk date dpkg-deb du git gzip install mktemp sed; do
+for command_name in awk date dpkg-deb du git gzip install mktemp sed strip; do
     command -v "$command_name" >/dev/null || {
         printf 'package-deb.sh: required command not found: %s\n' "$command_name" >&2
         exit 1
@@ -30,6 +30,7 @@ stage_root=$work_dir/root
 "$repo_root/scripts/stage-system-package.sh" \
     --root "$stage_root" \
     --daemon-path /usr/lib/lensguard/camera-monitor
+strip --strip-unneeded "$stage_root/usr/lib/lensguard/camera-monitor"
 install -d -m 0755 -- "$stage_root/DEBIAN"
 install -m 0644 -- "$repo_root/LICENSE" "$stage_root/usr/share/doc/lensguard/copyright"
 source_epoch=${SOURCE_DATE_EPOCH:-$(git -C "$repo_root" log -1 --format=%ct)}
@@ -40,9 +41,9 @@ printf '%s\n' \
     "  * Release LensGuard $version." \
     '' \
     " -- Younes Rabeh <younesrabeh@users.noreply.github.com>  $release_date" \
-    > "$work_dir/changelog.Debian"
-gzip -n -9 < "$work_dir/changelog.Debian" \
-    > "$stage_root/usr/share/doc/lensguard/changelog.Debian.gz"
+    > "$work_dir/changelog"
+gzip -n -9 < "$work_dir/changelog" \
+    > "$stage_root/usr/share/doc/lensguard/changelog.gz"
 installed_size=$(du -sk "$stage_root/usr" | awk '{print $1}')
 sed \
     -e "s|@VERSION@|$version|g" \

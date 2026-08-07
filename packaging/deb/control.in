@@ -4,7 +4,7 @@ Section: utils
 Priority: optional
 Architecture: @ARCHITECTURE@
 Installed-Size: @INSTALLED_SIZE@
-Depends: dbus, gnome-shell (>= 50), pipewire, systemd
+Depends: dbus, gnome-shell (>= 50), libc6 (>= 2.34), pipewire, systemd
 Maintainer: Younes Rabeh <younesrabeh@users.noreply.github.com>
 Homepage: https://github.com/younesrabeh/lensguard
 Description: GNOME Shell camera privacy indicator
