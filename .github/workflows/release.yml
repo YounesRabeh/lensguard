@@ -466,6 +466,7 @@ jobs:
             libarchive-tools \
             libpipewire-0.3-0 \
             rpm \
+            ripgrep \
             unzip
 
       - name: Set up Rust
