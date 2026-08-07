@@ -114,6 +114,13 @@ jobs:
             exit 1
           fi
           cp -- "${portable_assets[@]}" publish-assets/
+          (
+            cd publish-assets
+            find . -maxdepth 1 -type f -printf '%P\n' | \
+              sort | xargs -r sha256sum > ../published-SHA256SUMS
+            mv -- ../published-SHA256SUMS SHA256SUMS
+            sha256sum --check SHA256SUMS
+          )
 
       - name: Create or replace draft GitHub release
         env:

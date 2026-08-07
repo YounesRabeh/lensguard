@@ -22,7 +22,8 @@ preference is preserved.
 
 After the release workflow succeeds, the separate publish workflow creates a **draft** GitHub
 release containing only the standalone extension ZIP and the installable DEB, binary RPM, and Arch
-packages. Rerunning that publish workflow replaces an existing draft without rebuilding packages.
+packages, plus checksums for those four files. Rerunning that publish workflow replaces an existing
+draft without rebuilding packages.
 Reviewing and publishing the draft—and any later GNOME Extensions submission—remain deliberate
 publishing steps.
 
