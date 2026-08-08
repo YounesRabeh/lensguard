@@ -71,7 +71,7 @@ install-local:
 uninstall-local:
 	./scripts/uninstall-local.sh
 
-check: format-check lint test build license-audit test-system-package
+check: format-check lint test build test-system-package
 
 bootstrap:
 	./scripts/bootstrap-dev.sh

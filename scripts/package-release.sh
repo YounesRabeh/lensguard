@@ -7,13 +7,29 @@ release_tag=v$version
 output_dir=${1:-$repo_root/dist/release/$version}
 require_rpm=false
 skip_rpm=false
+skip_license_audit=false
 
-if [[ ${2:-} == --require-rpm ]]; then
-    require_rpm=true
-elif [[ ${2:-} == --skip-rpm ]]; then
-    skip_rpm=true
-elif (($# > 1)); then
-    printf 'Usage: scripts/package-release.sh [OUTPUT_DIRECTORY] [--require-rpm|--skip-rpm]\n' >&2
+for option in "${@:2}"; do
+    case $option in
+        --require-rpm)
+            require_rpm=true
+            ;;
+        --skip-rpm)
+            skip_rpm=true
+            ;;
+        --skip-license-audit)
+            skip_license_audit=true
+            ;;
+        *)
+            printf '%s\n' \
+                'Usage: scripts/package-release.sh [OUTPUT_DIRECTORY] [--require-rpm|--skip-rpm] [--skip-license-audit]' >&2
+            exit 2
+            ;;
+    esac
+done
+
+if $require_rpm && $skip_rpm; then
+    printf '%s\n' '--require-rpm and --skip-rpm cannot be used together' >&2
     exit 2
 fi
 
@@ -70,8 +86,17 @@ tar \
     --transform="s,^,lensguard-$version/," \
     --create --file=- | gzip -n > "$source_archive"
 
-"$repo_root/scripts/audit-licenses.sh" \
-    "$output_dir/lensguard-$version-dependency-licenses.tsv"
+license_report=$output_dir/lensguard-$version-dependency-licenses.tsv
+if $skip_license_audit; then
+    if [[ ! -s $license_report ]]; then
+        printf 'package-release.sh: verified dependency license report is missing: %s\n' \
+            "$license_report" >&2
+        exit 1
+    fi
+    printf '%s\n' 'Using dependency license report produced by the release audit gate.'
+else
+    "$repo_root/scripts/audit-licenses.sh" "$license_report"
+fi
 
 if $skip_rpm; then
     printf '%s\n' 'RPM build intentionally skipped; native release workflow supplies it separately.'

@@ -15,6 +15,14 @@ matches `Cargo.toml`, is newer than the latest published stable release, and is 
 `main`. It requires successful CI on the tagged commit, then builds DEB, RPM, Arch, extension,
 daemon, source, licence, and manifest artifacts.
 
+Before any native package job starts, a dedicated release gate audits the locked Rust dependency
+licenses and produces the dependency-license report. The DEB, RPM, Arch, and core artifact jobs all
+depend on that gate. Routine `make check` runs intentionally omit this release-only audit.
+
+The audit currently uses `scripts/audit-licenses.sh` and a reviewed SPDX-expression allowlist.
+Replace it with `cargo deny check licenses` only after a checked-in `deny.toml` reproduces the
+policy, handles the pinned Git dependency, and produces an equivalent release artifact.
+
 Each native package is metadata-linted, installed in its target distribution container, checked
 for installed paths and permissions, cold-activated over D-Bus, upgraded from the previous stable
 package when one exists, and uninstalled. Upgrade tests also verify that the panel-indicator

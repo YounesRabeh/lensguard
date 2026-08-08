@@ -109,6 +109,67 @@ The user daemon is the only component that communicates with the GNOME Shell ext
 
 The eBPF observer must not expose a second UI-facing API.
 
+## Distribution model
+
+LensGuard has two supported installation paths. Both use the same runtime architecture and D-Bus
+contract, but they obtain the extension and native service from different sources.
+
+### GNOME Store path
+
+The user installs two components:
+
+1. the Lens Guard extension ZIP from `extensions.gnome.org`; and
+2. the matching `lensguard-service` package for the user's Linux distribution.
+
+The extension ZIP contains only:
+
+- JavaScript/GJS extension code;
+- preferences code;
+- GSettings schemas; and
+- `metadata.json`.
+
+It must not contain the user daemon, privileged observer, eBPF objects, native libraries,
+executables, installers, systemd units, D-Bus service files, capability configuration, or policy
+files.
+
+The native `lensguard-service` package contains:
+
+- the unprivileged `camera-monitor` user daemon;
+- the privileged `lensguard-v4l2-observer` and its eBPF objects;
+- user-session D-Bus activation for the daemon;
+- systemd user and system service/socket definitions;
+- the restricted observer IPC configuration; and
+- the minimum capability, security-policy, and uninstall configuration required by the target
+  distribution.
+
+When the extension connects to the documented user-session D-Bus name, D-Bus activation starts
+the user daemon. The daemon then connects to the observer through the restricted authenticated
+local IPC boundary. The extension must show an explicit service-unavailable state when
+`lensguard-service` is absent, incompatible, denied, or stopped. It must never download, install,
+upgrade, or privilege-escalate the service itself.
+
+The GNOME Store description and project documentation must clearly explain the native service
+requirement and link to installation instructions for each supported distribution.
+
+### Native package path
+
+Distributions may provide these packages:
+
+- `lensguard-service`: user daemon, privileged observer, IPC, systemd, D-Bus, capabilities, and
+  policy files;
+- `lensguard-extension`: the system-installed GNOME Shell extension only; and
+- `lensguard`: a convenience meta-package that installs both packages.
+
+This path gives users one package-manager transaction for the complete product. It must not
+overwrite, delete, or silently replace a per-user extension installed from
+`extensions.gnome.org`. Documentation and package metadata must tell users to choose either the
+GNOME Store extension or the distribution-provided extension, avoiding two installed copies with
+the same UUID.
+
+Both paths must use the same extension UUID, D-Bus API version, observer IPC schema version, and
+workspace release version. A version mismatch must produce a clear unavailable state rather than
+partially functioning or silently falling back.
+
 ## Security boundary
 
 The eBPF observer is a privileged, security-sensitive component.
@@ -501,24 +562,33 @@ Keep the extension unprivileged and minimal:
 - never read `/dev/videoN`;
 - never communicate directly with the privileged observer.
 
-### 5. Packaging
+### 5. Packaging and delivery
 
-Package the privileged observer separately from the GNOME extension ZIP.
+Package the extension and native service as separate release boundaries. The privileged observer
+is part of the native service boundary and is always separate from the GNOME extension ZIP.
 
-Possible artifacts:
+Required release artifacts:
 
 ```text
 lensguard-extension.zip
-lensguard-camera-monitor
-lensguard-v4l2-observer
-lensguard-v4l2-observer.service
-lensguard-v4l2-observer.socket
-lensguard-v4l2-observer.policy-or-capability-config
-lensguard-v4l2-observer.bpf.o
+lensguard-service_<version>_<architecture>.deb
+lensguard-service-<version>-<release>.<architecture>.rpm
+lensguard-service-<version>-<release>-<architecture>.pkg.tar.zst
 ```
+
+Distributions may additionally publish `lensguard-extension` and the `lensguard` convenience
+meta-package. Release archives may include diagnostic binaries, manifests, checksums, source
+archives, and package recipes, but only the extension ZIP is submitted to
+`extensions.gnome.org`.
 
 Packaging requirements:
 
+- separate build and validation jobs for the extension ZIP and native service packages;
+- extension ZIP contains only reviewable GJS, metadata, schemas, and preferences resources;
+- `lensguard-service` contains no GNOME Shell extension files;
+- optional `lensguard-extension` contains no daemon, observer, native library, or privileged file;
+- optional `lensguard` meta-package contains no files and depends on the service and extension
+  packages;
 - explicit privileged-component documentation;
 - reproducible builds;
 - signed release artifacts where supported;
@@ -526,7 +596,10 @@ Packaging requirements:
 - correct service, socket, capability, and policy permissions;
 - clean uninstall of services, BPF objects, capabilities, sockets, and policy;
 - extension package contains no privileged binary;
-- GNOME extension store listing clearly states that the extension requires an externally installed LensGuard service.
+- native packages never modify a per-user GNOME Store installation;
+- package upgrades preserve compatible settings and reject incompatible IPC versions safely; and
+- GNOME extension store listing clearly states that the extension requires an externally installed
+  `lensguard-service` package.
 
 ## Iteration plan
 
@@ -752,33 +825,55 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 
 ### Iteration V8 — Release and packaging
 
-**Goal:** publish LensGuard as a V4L2-only monitor with a separately packaged privileged observer.
+**Goal:** publish LensGuard as a V4L2-only monitor through both the GNOME Store and native-package
+installation paths while preserving the extension/service privilege boundary.
 
 **Checklist**
 
-- [ ] Package the user daemon.
-- [ ] Package the observer separately.
-- [ ] Add installation and removal documentation.
+- [ ] Build a GNOME Store ZIP containing only GJS, preferences, schemas, and metadata.
+- [ ] Build `lensguard-service` DEB, RPM, and Arch packages containing the user daemon, privileged
+  observer, eBPF objects, IPC, systemd, D-Bus, capabilities, and policy files.
+- [ ] Build an optional `lensguard-extension` system package containing only the extension.
+- [ ] Build an optional file-free `lensguard` meta-package depending on `lensguard-service` and
+  `lensguard-extension`.
+- [ ] Add separate GNOME Store and native-package installation and removal documentation.
 - [ ] Add privilege and privacy documentation.
 - [ ] Add supported-kernel and distribution documentation.
 - [ ] Add clear unavailable-state documentation.
 - [ ] Add rollback and version-compatibility instructions.
-- [ ] Confirm the GNOME extension ZIP contains no privileged binary.
-- [ ] Confirm the extension-store description explains the external service requirement.
+- [ ] Confirm the GNOME extension ZIP contains no native or privileged files.
+- [ ] Confirm `lensguard-service` contains no GNOME extension files.
+- [ ] Confirm the extension-store description explains the `lensguard-service` requirement.
+- [ ] Confirm no native package overwrites or removes a per-user GNOME Store extension.
+- [ ] Publish checksums and manifests for every user-installable artifact.
 
 **Minimum tests**
 
-- [ ] Clean installation on each supported distribution.
+- [ ] GNOME Store ZIP installs and enables without native files in the archive.
+- [ ] With no `lensguard-service` installed, the extension shows a stable unavailable state.
+- [ ] Installing `lensguard-service` enables cold D-Bus activation without reinstalling the
+  extension.
+- [ ] Clean native meta-package installation provides the complete working product.
+- [ ] Clean service-package installation on each supported distribution.
+- [ ] DEB, RPM, and Arch package-content tests enforce the component boundaries.
 - [ ] Clean removal of extension, user daemon, observer, BPF objects, capabilities, sockets, and policy.
+- [ ] Removing `lensguard-service` leaves the GNOME Store extension and its settings untouched.
+- [ ] Removing `lensguard-extension` leaves `lensguard-service` untouched when independently
+  installed.
+- [ ] A per-user and system extension with the same UUID are detected and documented without
+  destructive automatic cleanup.
 - [ ] Upgrade from a previous LensGuard version.
 - [ ] Observer/user-daemon version mismatch behavior.
+- [ ] Extension/user-daemon D-Bus version mismatch behavior.
 - [ ] Packaging policy validation.
 - [ ] Reproducible build verification.
 - [ ] Full unit, integration, smoke, security, privacy, and performance suites.
 
 **Exit criteria**
 
-- LensGuard can be installed, upgraded, used, and removed safely with clear documentation of its privileged observer and remaining blind spots.
+- Both installation paths can be installed, upgraded, used, and removed safely; the GNOME Store
+  ZIP passes review checks; component boundaries are enforced; and the privileged observer and
+  remaining blind spots are clearly documented.
 
 ## Required test categories
 
@@ -877,12 +972,18 @@ LensGuard may be released when it:
 - reliably detects successful direct V4L2 capture on documented supported systems;
 - does not report a mere device open or probe as active capture;
 - distinguishes active sessions by process and camera;
-- uses a separately packaged, narrowly privileged observer;
+- uses an isolated, narrowly privileged observer delivered only through native service packages;
 - reads no frames, buffers, complete command lines, or process memory;
 - passes the full unit, integration, smoke, security, privacy, compatibility, and performance test suites;
 - reports observer unavailability clearly;
 - has clear installation, removal, capability, kernel-support, and blind-spot documentation;
-- contains no privileged binary inside the GNOME extension ZIP.
+- provides verified `lensguard-service` packages for every documented supported distribution;
+- keeps native service files out of the GNOME extension ZIP;
+- keeps GNOME extension files out of `lensguard-service`;
+- documents the choice between the GNOME Store and native extension installation paths;
+- never modifies a per-user GNOME Store installation from a native package; and
+- passes GNOME extension review checks with no native executable, library, eBPF object, service
+  definition, installer, or privilege configuration inside the extension ZIP.
 
 ## Final product statement
 
@@ -890,13 +991,19 @@ LensGuard's supported architecture is:
 
 ```text
 Detection:
-direct native direct V4L2 capture monitoring only
+direct native V4L2 capture monitoring only
 
 Kernel observation:
 narrowly privileged eBPF observer
 
 Desktop integration:
 unprivileged user daemon and GNOME Shell extension
+
+Distribution:
+GNOME Store extension plus lensguard-service, or a native lensguard meta-package
 ```
 
-LensGuard reports only confirmed V4L2 capture activity. It does not use PipeWire or WirePlumber, does not treat a device open as active capture, does not read image data, and keeps privileged kernel observation isolated from the unprivileged desktop UI.
+LensGuard reports only confirmed V4L2 capture activity. It does not use PipeWire or WirePlumber,
+does not treat a device open as active capture, does not read image data, and keeps privileged
+kernel observation isolated from the unprivileged desktop UI. Users may install the GNOME Store
+extension with `lensguard-service`, or install the complete native `lensguard` meta-package.
