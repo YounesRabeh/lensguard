@@ -2,14 +2,19 @@
 
 ## Product decision
 
-LensGuard will become a **direct-V4L2-only** camera monitor. Direct V4L2 capture is the sole
-supported source of camera-use state. The current PipeWire-based detector is deprecated and will
-be removed; it must not remain as a fallback, secondary signal, or requirement for normal camera
-detection.
+LensGuard will become a **direct-V4L2-only** camera monitor. Confirmed non-broker V4L2 capture
+is the sole supported source of LensGuard camera-use state. The current PipeWire-based detector
+is deprecated and will be removed; it must not remain as a fallback, secondary signal, or
+requirement for normal camera detection.
 
 This replacement is intentionally a product migration, not an additional backend. Until the V4L2
 implementation meets the release criteria in this document, LensGuard must clearly report that
 monitoring is unavailable rather than combining incomplete V4L2 results with the retired backend.
+
+This makes LensGuard complementary to GNOME rather than a second PipeWire indicator: GNOME owns
+the indication for brokered camera use, while LensGuard reports only direct V4L2 access that
+bypasses trusted desktop camera brokers. LensGuard never queries, mirrors, controls, or infers
+the state of GNOME's built-in privacy indicator.
 
 ## PipeWire retirement scope
 
@@ -35,7 +40,13 @@ LensGuard will use one camera-detection path:
 
 ### Direct V4L2 coverage: narrowly privileged eBPF observer
 
-- Detects applications that access `/dev/videoN` directly through V4L2.
+- Detects confirmed V4L2 capture and classifies its process ownership before it reaches the user
+  daemon.
+- Emits a normal event only for non-broker direct V4L2 capture.
+- Suppresses capture owned by a trusted desktop camera broker, such as PipeWire, because GNOME
+  is responsible for showing that path.
+- Suppresses unclassified capture and emits only an aggregate diagnostic; uncertain ownership
+  must never create a LensGuard session.
 - Uses a narrowly scoped eBPF program and the minimum privileges required by supported kernels and distributions.
 - Reports only metadata required to determine active camera capture.
 - Emits process identity, device identity, capture operation, timestamp, and operation result.
@@ -58,7 +69,9 @@ Scanning open file descriptors is insufficient because an open camera node does 
 
 ## Goal
 
-Detect successful direct V4L2 capture activity, associate it with a process and physical camera where safely possible, and expose one accurate camera session to the GNOME Shell extension.
+Detect successful non-broker direct V4L2 capture, associate it with a process and physical camera
+where safely possible, and expose one accurate LensGuard session to the GNOME Shell extension
+without duplicating GNOME's brokered-camera indication.
 
 The implementation must remain metadata-only, local, reviewable, and narrowly privileged.
 
@@ -66,6 +79,9 @@ The implementation must remain metadata-only, local, reviewable, and narrowly pr
 
 - Using any graph-based or media-session-manager detection backend.
 - Combining V4L2 events with a second camera-detection source.
+- Reporting capture owned by trusted desktop camera brokers.
+- Treating uncertain broker ownership as direct capture.
+- Querying, controlling, or mirroring GNOME Shell's built-in privacy indicator.
 - Making the GNOME Shell extension privileged.
 - Reporting a camera as active solely because `/dev/videoN` is open.
 - Reading, copying, hashing, decoding, mapping, or storing camera frames.
@@ -100,6 +116,8 @@ The implementation must remain metadata-only, local, reviewable, and narrowly pr
 │                                              │
 │ - narrowly scoped kernel hooks              │
 │ - successful capture start/stop detection   │
+│ - trusted-broker ownership classification    │
+│ - suppress broker-owned and unknown events  │
 │ - PID/TGID and device metadata only         │
 │ - no frames, buffers, history, or networking│
 └──────────────────────────────────────────────┘
@@ -107,7 +125,9 @@ The implementation must remain metadata-only, local, reviewable, and narrowly pr
 
 The user daemon is the only component that communicates with the GNOME Shell extension.
 
-The eBPF observer must not expose a second UI-facing API.
+The eBPF observer must not expose a second UI-facing API. It is also the enforcement point for
+duplicate prevention: broker-owned and unknown events are not sent as session-capable events over
+the IPC boundary.
 
 ## Distribution model
 
@@ -181,6 +201,11 @@ Requirements:
 - Do not assume full root access is necessary without measuring and documenting the deployment model.
 - Drop unnecessary privileges after initialization where technically possible.
 - Restrict observed operations to V4L2 capture-relevant file descriptors, devices, syscalls, and ioctl requests.
+- Classify the event owner against a versioned, package-owned trusted-broker policy before IPC.
+- Validate broker identity using trusted executable identity and path metadata; process names alone
+  are insufficient.
+- Treat an unverified, mismatched, or unavailable broker identity as `Unknown`, not as direct
+  capture.
 - Restrict IPC access to the LensGuard user daemon through documented socket ownership or policy.
 - Validate every event crossing the privileged/unprivileged boundary.
 - Do not accept arbitrary paths, filters, commands, tracing targets, or BPF programs from the user daemon.
@@ -209,6 +234,35 @@ Primary stop signals:
 - observer shutdown or backend loss.
 
 Observer shutdown or backend loss must terminate the session as interrupted or unknown, not as a normal successful stop.
+
+### Broker ownership and duplicate prevention
+
+Every confirmed V4L2 capture candidate must be classified by the privileged observer before it is
+published to the user daemon:
+
+```rust
+pub enum CaptureOwner {
+    Direct,
+    BrokerOwned,
+    Unknown,
+}
+```
+
+- `Direct` means the observer verified that the capture is not owned by a trusted desktop camera
+  broker. Only this classification may produce a `DirectCaptureEvent` and a LensGuard session.
+- `BrokerOwned` means the capture is performed by a trusted broker such as PipeWire. It is
+  suppressed because GNOME owns the user-facing indicator for brokered camera use.
+- `Unknown` means the observer cannot safely establish the process owner. It is suppressed and
+  recorded only as an aggregate diagnostic.
+
+The trusted-broker policy is a versioned file shipped and maintained by the native package. It
+must validate the executable's trusted identity and expected path; matching `comm`, argv, or a
+user-supplied process name is never enough. The observer must fail closed: a policy parse error,
+identity mismatch, or unsupported lookup produces `Unknown` rather than a visible session.
+
+Broker suppression is not a PipeWire monitoring backend. It neither builds a media graph nor
+reports PipeWire sessions; it only prevents the observer from presenting the broker's V4L2 device
+access as a second privacy indicator.
 
 ### Open-only state
 
@@ -293,6 +347,7 @@ pub struct DirectCaptureEvent {
     pub operation: DirectCaptureOperation,
     pub result: i64,
     pub confidence: CaptureConfidence,
+    pub owner: CaptureOwner,
 }
 ```
 
@@ -316,6 +371,18 @@ Contract requirements:
 - Enforce strict message-size and field-length limits.
 - Use monotonic timestamps for event ordering.
 - Include syscall or ioctl result information so failed operations cannot become confirmed sessions.
+- Permit only `CaptureOwner::Direct` in session-capable messages; reject all other values in the
+  user daemon even if a compromised observer sends them.
+- Send broker-owned and unknown observations only as aggregate, non-identifying diagnostics:
+
+  ```rust
+  pub struct SuppressionDiagnostics {
+      pub suppressed_broker_events: u64,
+      pub suppressed_unknown_events: u64,
+  }
+  ```
+
+- Diagnostics must contain no PID, application name, command line, device path, or event history.
 - Keep display names, desktop-file metadata, icons, and GNOME-specific concepts out of the privileged observer.
 - Perform application enrichment only in the unprivileged user daemon.
 - Treat the observer as untrusted input despite being locally installed.
@@ -428,6 +495,10 @@ Requirements:
 - do not expose unrelated process environment data;
 - do not trust process identity after PID reuse without validating timestamps or process start time.
 
+The privileged observer may inspect the minimum local executable identity needed to apply its
+trusted-broker policy, but that identity is classification input only. It must not cross IPC,
+appear in diagnostics, or be retained after the classification decision.
+
 ## Investigation phase
 
 Do not begin production implementation until the investigation report is approved.
@@ -455,6 +526,8 @@ Do not begin production implementation until the investigation report is approve
    - process identity;
    - file-descriptor identity;
    - physical-device identity;
+   - trusted-broker identity and whether it can distinguish direct, broker-owned, and unknown
+     capture safely;
    - required privilege or capability;
    - supported kernels and distributions.
 2. A threat model for:
@@ -474,8 +547,10 @@ Do not begin production implementation until the investigation report is approve
    - Flatpak clients with device access;
    - streaming I/O;
    - read I/O.
-4. CPU, memory, wake-up, event-latency, and battery measurements.
-5. A written product decision approving or rejecting the eBPF observer architecture.
+4. A versioned, package-owned trusted-broker policy for each supported distribution, including
+   its executable identity validation method and upgrade behavior.
+5. CPU, memory, wake-up, event-latency, and battery measurements.
+6. A written product decision approving or rejecting the eBPF observer architecture.
 
 ### Rejection criteria
 
@@ -488,6 +563,7 @@ Reject an approach if it:
 - allows the user daemon to load arbitrary BPF programs;
 - cannot distinguish successful operations from syscall attempts;
 - cannot cleanly identify device and process ownership;
+- cannot safely suppress trusted broker-owned capture without relying on a process name alone;
 - produces unacceptable idle wake-ups, CPU use, or battery cost;
 - cannot be packaged and reviewed independently;
 - creates an undocumented or overly broad privilege boundary.
@@ -501,6 +577,8 @@ Add V4L2-focused types and state machines:
 - `DirectCaptureEvent`;
 - `DirectCaptureOperation`;
 - `CaptureConfidence`;
+- `CaptureOwner`;
+- aggregate suppression diagnostics;
 - `ObserverAvailability`;
 - physical-camera identity;
 - process identity;
@@ -522,10 +600,12 @@ The unprivileged user daemon must provide:
 
 - observer client;
 - strict event validation;
+- reject non-direct capture events from becoming sessions;
 - process/application enrichment;
 - physical-device enrichment;
 - V4L2 session state;
 - observer health reporting;
+- non-identifying suppression diagnostics;
 - user-session D-Bus API;
 - safe behavior when the observer disconnects or fails;
 - no camera-device opening;
@@ -539,6 +619,8 @@ Create a separate privileged component:
 - narrowly scoped eBPF programs;
 - V4L2 file-descriptor tracking;
 - successful operation filtering;
+- trusted-broker policy loading and owner classification before IPC;
+- aggregate broker/unknown suppression accounting;
 - kernel event-to-device resolution;
 - restricted local IPC;
 - capability and kernel-feature detection;
@@ -554,8 +636,10 @@ Create a separate privileged component:
 Keep the extension unprivileged and minimal:
 
 - show the camera indicator for confirmed sessions;
+- show sessions only for confirmed `Direct` capture;
 - show application and camera information from the user daemon;
 - expose observer availability in diagnostics or preferences;
+- expose aggregate broker and unknown suppression diagnostics without identifying data;
 - display a clear warning when monitoring is unavailable;
 - never perform privilege escalation;
 - never install, configure, or restart the observer;
@@ -599,7 +683,9 @@ Packaging requirements:
 - native packages never modify a per-user GNOME Store installation;
 - package upgrades preserve compatible settings and reject incompatible IPC versions safely; and
 - GNOME extension store listing clearly states that the extension requires an externally installed
-  `lensguard-service` package.
+  `lensguard-service` package; and
+- native packages install and version the trusted-broker policy with the observer; user
+  configuration must not be able to weaken it.
 
 ## Iteration plan
 
@@ -615,6 +701,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Identify viable kernel hooks and attachment types.
 - [ ] Determine how to map traced file descriptors to V4L2 devices.
 - [ ] Confirm how syscall and ioctl return values will be observed.
+- [ ] Define the package-owned trusted-broker policy and verify executable identity/path lookup
+  without relying on a process name.
 - [ ] Evaluate required capabilities on supported Fedora releases and other target distributions.
 - [ ] Document kernel BTF and CO-RE requirements.
 - [ ] Document Secure Boot, lockdown, SELinux, AppArmor, and BPF policy effects.
@@ -627,6 +715,10 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Failed `VIDIOC_STREAMON` does not create a confirmed event.
 - [ ] Merely opening and querying `/dev/videoN` does not create a confirmed event.
 - [ ] Process identity and device major/minor are captured.
+- [ ] A trusted PipeWire broker capture is classified as `BrokerOwned` and is not emitted as a
+  LensGuard session event.
+- [ ] An ambiguous or mismatched broker identity is classified as `Unknown` and is not emitted as
+  a LensGuard session event.
 - [ ] `VIDIOC_STREAMOFF` ends a confirmed session.
 - [ ] Process exit and final close end a confirmed session.
 - [ ] Prototype teardown removes all hooks cleanly.
@@ -643,6 +735,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 
 - [ ] Define versioned observer-event schema.
 - [ ] Define confidence and observer-health models.
+- [ ] Define `Direct`, `BrokerOwned`, and `Unknown` ownership semantics.
+- [ ] Define aggregate suppression diagnostics with no identifying fields.
 - [ ] Define physical-camera identity.
 - [ ] Define process identity and PID-reuse protection.
 - [ ] Add state transitions for start, stop, close, process exit, device removal, and backend loss.
@@ -658,6 +752,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Backend-loss behavior tests.
 - [ ] Open-only events never activate confirmed camera state.
 - [ ] Failed operations never activate confirmed camera state.
+- [ ] `BrokerOwned` and `Unknown` events cannot activate confirmed camera state.
+- [ ] A non-direct event injected over the synthetic transport is rejected by the user daemon.
 - [ ] PID-reuse tests.
 
 **Exit criteria**
@@ -675,6 +771,7 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Add strict schema validation.
 - [ ] Add version negotiation.
 - [ ] Add observer-availability reporting.
+- [ ] Add aggregate broker and unknown suppression diagnostics.
 - [ ] Add disabled, unavailable, and backend-lost states.
 - [ ] Keep the production observer disabled until explicitly configured.
 
@@ -688,6 +785,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Observer disconnect/reconnect tests.
 - [ ] Observer absence produces an explicit unavailable state.
 - [ ] No synthetic event can bypass confirmation rules.
+- [ ] Synthetic broker-owned and unknown events never create sessions, application rows, or panel
+  indicator state.
 
 **Exit criteria**
 
@@ -703,6 +802,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Track relevant V4L2 file descriptors.
 - [ ] Filter for capture-relevant devices and operations.
 - [ ] Observe operation return values.
+- [ ] Load and enforce the trusted-broker policy before emitting IPC events.
+- [ ] Count broker-owned and unknown suppressions without retaining event identity.
 - [ ] Emit only approved event fields.
 - [ ] Implement clean attach/detach lifecycle.
 - [ ] Add kernel and capability detection.
@@ -717,6 +818,10 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Negative tests for unrelated character devices.
 - [ ] Failed capture operations do not become confirmed sessions.
 - [ ] Device-open-only behavior does not activate the indicator.
+- [ ] A trusted PipeWire broker performing confirmed V4L2 capture does not activate the LensGuard
+  indicator or create an application row.
+- [ ] A trusted native non-broker V4L2 client produces one direct event and one LensGuard session.
+- [ ] A spoofed, missing, or mismatched broker identity is suppressed as unknown.
 - [ ] No frame payload appears in events or logs.
 - [ ] No command-line data appears in events or logs.
 - [ ] Service restart and crash-cleanup tests.
@@ -728,7 +833,7 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 
 ### Iteration V5 — Identity resolution and session correctness
 
-**Goal:** produce accurate application and camera sessions from V4L2 events.
+**Goal:** produce accurate application and camera sessions from confirmed non-broker V4L2 events.
 
 **Checklist**
 
@@ -737,6 +842,7 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Implement physical-camera identity resolution.
 - [ ] Distinguish multiple cameras exposed by one physical device.
 - [ ] Handle helper processes and browser process models.
+- [ ] Apply broker ownership classification before application enrichment.
 - [ ] Protect against PID reuse.
 - [ ] Handle duplicate FDs and repeated start/stop operations.
 - [ ] Preserve ambiguity in diagnostics.
@@ -751,6 +857,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Final close ends the correct session.
 - [ ] Process exit ends all sessions owned by that process.
 - [ ] PID reuse cannot inherit an old session.
+- [ ] Broker-owned events never reach application enrichment or session state.
+- [ ] Unknown-owner events increment only aggregate diagnostics.
 
 **Exit criteria**
 
@@ -764,9 +872,10 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 
 - [ ] Expose active sessions through user-session D-Bus.
 - [ ] Expose observer availability and error state.
-- [ ] Show the indicator only for confirmed sessions.
+- [ ] Show the indicator only for confirmed direct sessions.
 - [ ] Show application and camera details.
 - [ ] Show monitoring-unavailable diagnostics.
+- [ ] Show non-identifying broker/unknown suppression diagnostics in preferences or diagnostics.
 - [ ] Handle daemon restart and D-Bus reconnection.
 - [ ] Keep the extension free of privileged operations.
 - [ ] Keep the extension independent of observer IPC details.
@@ -775,6 +884,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 
 - [ ] Extension enable/disable smoke test.
 - [ ] Confirmed synthetic session activates the indicator.
+- [ ] A broker-owned synthetic capture creates no LensGuard icon, tile state, or application row.
+- [ ] An unknown synthetic capture creates no LensGuard icon, tile state, or application row.
 - [ ] Open-only event does not activate the indicator.
 - [ ] Session stop hides the indicator.
 - [ ] Daemon restart recovers state.
@@ -784,7 +895,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 
 **Exit criteria**
 
-- GNOME Shell accurately presents V4L2-confirmed camera use and observer availability.
+- GNOME Shell accurately presents confirmed direct V4L2 camera use, observer availability, and
+  non-identifying suppression diagnostics without duplicating brokered use.
 
 ### Iteration V7 — Compatibility, privacy, security, and performance validation
 
@@ -818,6 +930,9 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] User logout/login.
 - [ ] Failed capture request.
 - [ ] Device open and query without capture.
+- [ ] GNOME Camera/PipeWire capture creates no LensGuard session, icon, or application row.
+- [ ] Direct native V4L2 capture creates exactly one LensGuard session.
+- [ ] Repeated broker and direct events do not create duplicate LensGuard sessions or indicators.
 
 **Exit criteria**
 
@@ -843,6 +958,8 @@ installation paths while preserving the extension/service privilege boundary.
 - [ ] Add rollback and version-compatibility instructions.
 - [ ] Confirm the GNOME extension ZIP contains no native or privileged files.
 - [ ] Confirm `lensguard-service` contains no GNOME extension files.
+- [ ] Confirm the trusted-broker policy is package-owned, versioned with the observer, and cannot
+  be weakened through user configuration.
 - [ ] Confirm the extension-store description explains the `lensguard-service` requirement.
 - [ ] Confirm no native package overwrites or removes a per-user GNOME Store extension.
 - [ ] Publish checksums and manifests for every user-installable artifact.
@@ -865,6 +982,9 @@ installation paths while preserving the extension/service privilege boundary.
 - [ ] Upgrade from a previous LensGuard version.
 - [ ] Observer/user-daemon version mismatch behavior.
 - [ ] Extension/user-daemon D-Bus version mismatch behavior.
+- [ ] Package-installation test verifies broker-owned capture never creates a LensGuard session.
+- [ ] Package-installation test verifies unknown-owner capture is suppressed and diagnosed without
+  exposing process or device identity.
 - [ ] Packaging policy validation.
 - [ ] Reproducible build verification.
 - [ ] Full unit, integration, smoke, security, privacy, and performance suites.
@@ -883,6 +1003,8 @@ installation paths while preserving the extension/service privilege boundary.
 - Successful versus failed operation handling.
 - Open-only confidence behavior.
 - Duplicate and out-of-order events.
+- Broker-owner classification and policy-version validation.
+- Broker-owned and unknown-event suppression.
 - Process identity fallback.
 - PID reuse.
 - Physical-device identity matching.
@@ -904,6 +1026,9 @@ installation paths while preserving the extension/service privilege boundary.
 - Process termination.
 - Daemon restart.
 - Observer restart.
+- Trusted PipeWire broker capture produces no LensGuard session.
+- Direct non-broker V4L2 capture produces exactly one LensGuard session.
+- Repeated broker/direct capture events do not create duplicate sessions or indicators.
 
 ### Smoke tests
 
@@ -912,6 +1037,8 @@ installation paths while preserving the extension/service privilege boundary.
 - Observer disabled.
 - Observer missing required capability.
 - Observer blocked by kernel or security policy.
+- Trusted-broker policy missing, invalid, or version-mismatched.
+- Unknown owner is suppressed and only aggregate diagnostics are exposed.
 - GNOME extension enable/disable.
 - User daemon restart.
 - Observer restart.
@@ -929,6 +1056,8 @@ installation paths while preserving the extension/service privilege boundary.
 - Service and socket permissions are correct.
 - BPF objects detach cleanly after shutdown or crash.
 - User daemon treats observer input as untrusted.
+- A broker identity cannot be accepted from a process name alone.
+- Broker-owned and unknown events cannot cross the session-capable IPC boundary.
 
 ### Privacy review
 
@@ -950,6 +1079,7 @@ Allowed metadata must be documented and limited to:
 - capture operation and result;
 - monotonic timestamp;
 - observer availability;
+- aggregate broker/unknown suppression counters without event identity;
 - application identity resolved locally by the unprivileged daemon.
 
 ### Performance tests
@@ -972,6 +1102,10 @@ LensGuard may be released when it:
 - reliably detects successful direct V4L2 capture on documented supported systems;
 - does not report a mere device open or probe as active capture;
 - distinguishes active sessions by process and camera;
+- reports only confirmed non-broker direct V4L2 sessions;
+- suppresses trusted broker-owned and unknown-owner capture before session state;
+- prevents brokered capture from creating a duplicate LensGuard icon, application row, or
+  notification;
 - uses an isolated, narrowly privileged observer delivered only through native service packages;
 - reads no frames, buffers, complete command lines, or process memory;
 - passes the full unit, integration, smoke, security, privacy, compatibility, and performance test suites;
@@ -991,7 +1125,7 @@ LensGuard's supported architecture is:
 
 ```text
 Detection:
-direct native V4L2 capture monitoring only
+confirmed non-broker direct native V4L2 capture monitoring only
 
 Kernel observation:
 narrowly privileged eBPF observer
@@ -1003,7 +1137,10 @@ Distribution:
 GNOME Store extension plus lensguard-service, or a native lensguard meta-package
 ```
 
-LensGuard reports only confirmed V4L2 capture activity. It does not use PipeWire or WirePlumber,
-does not treat a device open as active capture, does not read image data, and keeps privileged
-kernel observation isolated from the unprivileged desktop UI. Users may install the GNOME Store
-extension with `lensguard-service`, or install the complete native `lensguard` meta-package.
+LensGuard reports only confirmed non-broker direct V4L2 capture activity. It does not use
+PipeWire or WirePlumber as a detection backend, does not treat a device open as active capture,
+and suppresses capture owned by trusted desktop camera brokers or unknown owners before UI-facing
+state. GNOME remains responsible for brokered camera indication. LensGuard does not read image
+data and keeps privileged kernel observation isolated from the unprivileged desktop UI. Users may
+install the GNOME Store extension with `lensguard-service`, or install the complete native
+`lensguard` meta-package.

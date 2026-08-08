@@ -32,7 +32,8 @@ stage_root=$work_dir/root
     --daemon-path /usr/lib/lensguard/camera-monitor
 strip --strip-unneeded "$stage_root/usr/lib/lensguard/camera-monitor"
 install -d -m 0755 -- "$stage_root/DEBIAN"
-install -m 0644 -- "$repo_root/LICENSE" "$stage_root/usr/share/doc/lensguard/copyright"
+install -m 0644 -- "$repo_root/packaging/deb/copyright.in" \
+    "$stage_root/usr/share/doc/lensguard/copyright"
 source_epoch=${SOURCE_DATE_EPOCH:-$(git -C "$repo_root" log -1 --format=%ct)}
 release_date=$(date --date="@$source_epoch" --rfc-email)
 printf '%s\n' \
