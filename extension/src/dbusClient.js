@@ -129,9 +129,6 @@ export class DbusClient {
     }
 
     stop() {
-        if (!this._running)
-            return;
-
         this._running = false;
         this._generation++;
         if (this._watchId)
