@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';

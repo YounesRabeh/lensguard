@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 export const PreferenceKey = Object.freeze({
     SHOW_PANEL_INDICATOR: 'show-panel-indicator',

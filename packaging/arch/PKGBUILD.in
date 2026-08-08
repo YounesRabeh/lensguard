@@ -5,7 +5,7 @@ pkgrel=1
 pkgdesc='GNOME Shell camera privacy indicator'
 arch=('@ARCHITECTURE@')
 url='https://github.com/YounesRabeh/lensguard'
-license=('MIT')
+license=('GPL-3.0-or-later')
 depends=('dbus' 'gnome-shell>=50' 'pipewire' 'systemd')
 source=('lensguard-root.tar.gz')
 sha256sums=('@SHA256@')

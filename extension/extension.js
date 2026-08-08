@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -12,9 +12,6 @@ import {
 
 export default class LensGuardExtension extends Extension {
     enable() {
-        if (this._indicator)
-            return;
-
         this._settings = this.getSettings();
         this._settingsChangedId = this._settings.connect(
             'changed', () => this._render());

@@ -2,7 +2,7 @@
 
 Audit policy: run for every release candidate using the locked workspace dependency graph.
 
-LensGuard itself is MIT licensed. The packaged GNOME extension has no production JavaScript
+LensGuard itself is licensed under GPL-3.0-or-later. The packaged GNOME extension has no production JavaScript
 dependencies. Its ESLint dependency is development-only and is not included in release artifacts.
 
 `scripts/audit-licenses.sh` inspected all 125 external Rust packages in the locked Cargo graph.

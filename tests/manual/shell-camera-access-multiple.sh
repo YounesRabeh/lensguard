@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Start multiple terminal V4L2 clients against the same camera.
 # Usage: ./tests/manual/shell-camera-access-multiple.sh [/dev/video0] [clients] [seconds]

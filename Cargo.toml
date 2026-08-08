@@ -16,7 +16,7 @@ bindgen = { git = "https://github.com/hkalbasi/rust-bindgen", rev = "8126d079146
 version = "1.4.0"
 edition = "2024"
 rust-version = "1.85"
-license = "MIT"
+license = "GPL-3.0-or-later"
 repository = "https://github.com/younesrabeh/lensguard"
 
 [workspace.dependencies]

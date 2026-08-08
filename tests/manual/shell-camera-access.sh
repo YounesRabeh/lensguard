@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 # Open a V4L2 camera from a terminal without using GNOME Camera.
 # Usage: ./tests/manual/shell-camera-access.sh [/dev/video0] [seconds]

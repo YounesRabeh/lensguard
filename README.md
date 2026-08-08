@@ -51,4 +51,4 @@ and warning behavior. Notifications are intentionally not used.
 
 ## License
 
-Lens Guard is free software released under the [MIT License](LICENSE).
+Lens Guard is free software released under the [GNU General Public License v3.0 or later](LICENSE).
