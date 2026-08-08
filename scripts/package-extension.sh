@@ -29,7 +29,6 @@ sed -i -E \
 gnome-extensions pack \
     --force \
     --quiet \
-    --extra-source="$package_source/icons" \
     --extra-source="$package_source/src" \
     --out-dir "$output_dir" \
     "$package_source"
