@@ -53,7 +53,6 @@ for required_file in \
     metadata.json \
     extension.js \
     prefs.js \
-    icons/camera-active.png \
     schemas/org.gnome.shell.extensions.lensguard.gschema.xml \
     src/dbusClient.js \
     src/dbusPayload.js \

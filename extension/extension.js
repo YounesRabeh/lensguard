@@ -13,11 +13,12 @@ import {
 export default class LensGuardExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
-        this._settingsChangedId = this._settings.connect(
-            'changed', () => this._render());
+        this._settings.connectObject(
+            'changed', () => this._render(), this);
 
         this._indicator = new LensGuardIndicator(
             () => this.openPreferences());
+        // GNOME places external indicators at the end of its privacy-indicator group.
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
 
         this._client = new DbusClient(
@@ -35,9 +36,7 @@ export default class LensGuardExtension extends Extension {
         this._indicator?.destroy();
         this._indicator = null;
 
-        if (this._settingsChangedId)
-            this._settings?.disconnect(this._settingsChangedId);
-        this._settingsChangedId = 0;
+        this._settings?.disconnectObject(this);
         this._settings = null;
         this._baseState = null;
     }
