@@ -107,7 +107,12 @@ elif command -v rpmbuild >/dev/null; then
         -o -name "lensguard-$version-*.src.rpm" \
         -o -name "lensguard-debuginfo-$version-*.rpm" \
         -o -name "lensguard-debugsource-$version-*.rpm" \
-        -o -name "lensguard-$version.spec" \) \
+        -o -name "lensguard-service-$version-*.rpm" \
+        -o -name "lensguard-service-$version-*.src.rpm" \
+        -o -name "lensguard-service-debuginfo-$version-*.rpm" \
+        -o -name "lensguard-service-debugsource-$version-*.rpm" \
+        -o -name "lensguard-$version.spec" \
+        -o -name "lensguard-service-$version.spec" \) \
         -exec cp -- {} "$output_dir/" \;
     if $require_rpm &&
         ! find "$output_dir" -maxdepth 1 -type f \
@@ -126,7 +131,7 @@ cat > "$work_dir/manifest" <<EOF
 LensGuard release candidate $version
 Architecture: $architecture
 Supported GNOME Shell: 50
-Packaging: one system package contains the daemon and extension; the extension ZIP is also shipped for testing.
+Packaging: the extension ZIP contains no native binaries. Install lensguard-service beside the Store extension, or install the full lensguard package.
 EOF
 install -m 0644 -- "$work_dir/manifest" "$output_dir/RELEASE-MANIFEST.txt"
 

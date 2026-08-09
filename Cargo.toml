@@ -13,7 +13,7 @@ resolver = "3"
 bindgen = { git = "https://github.com/hkalbasi/rust-bindgen", rev = "8126d0791465053aa88cb4903330f8c4260a0184" }
 
 [workspace.package]
-version = "1.4.5"
+version = "1.5.0"
 edition = "2024"
 rust-version = "1.85"
 license = "GPL-3.0-or-later"

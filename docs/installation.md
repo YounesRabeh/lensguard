@@ -76,9 +76,17 @@ D-Bus services, settings, and home-directory files are not removed.
 The checked-in service templates use `@EXECUTABLE@` rather than embedding a home directory.
 Distribution packages should substitute an appropriate path such as
 `/usr/libexec/lensguard/camera-monitor`, install the unit under the distribution's systemd user
-unit directory, install the D-Bus service under its session-service directory, and package the
-extension and compiled schema according to distribution policy. A package replacing a local
-installation should run the local uninstaller first so file precedence is unambiguous.
+unit directory, and install the D-Bus service under its session-service directory.
+
+Two package variants are produced:
+
+- `lensguard-service` contains only the daemon and service integration for users of the GNOME
+  Store extension.
+- `lensguard` contains both the daemon and a system extension for a fully package-managed install.
+
+The package variants conflict because their daemon files overlap. A per-user Store extension and
+the system extension must not coexist; Lens Guard displays a conflict warning when both UUID paths
+are present.
 
 The repository provides package build commands for the main Linux distribution families:
 
@@ -88,7 +96,7 @@ make package-deb   # Debian, Ubuntu, Linux Mint, Pop!_OS
 make package-arch  # Arch, Manjaro, EndeavourOS
 ```
 
-Each command creates an artifact under `dist/packages/` and builds the release daemon for the
+Each command creates full and service-only artifacts under `dist/packages/` and builds the release daemon for the
 current architecture. Run the command in a matching distribution environment (or its container or
 CI runner): a Fedora-built daemon is not guaranteed to run on an older Debian or Ubuntu release.
 The required native builders are `rpmbuild`, `dpkg-deb`, and `makepkg`, respectively.

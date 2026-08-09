@@ -56,6 +56,7 @@ for required_file in \
     src/dbusClient.js \
     src/dbusPayload.js \
     src/indicator.js \
+    src/installationConflict.js \
     src/preferences.js \
     src/sessionModel.js; do
     if ! grep -Fxq "$required_file" <<<"$archive_entries"; then
@@ -67,6 +68,12 @@ done
 if grep -Eq '(^|/)(tests?|fixtures|mocks?)/|mockDataProvider|gnomeSmoke|gnomeScreenshot' \
     <<<"$archive_entries"; then
     printf '%s\n' 'extension package contains development-only files' >&2
+    exit 1
+fi
+
+if grep -Eq '(^|/)(camera-monitor|lensguard-v4l2-observer)$|\.(so([.]|$)|a|o|node|wasm|bin)$' \
+    <<<"$archive_entries"; then
+    printf '%s\n' 'extension package contains a native binary or library' >&2
     exit 1
 fi
 

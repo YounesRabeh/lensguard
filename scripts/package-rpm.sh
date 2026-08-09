@@ -64,11 +64,17 @@ tar \
     "$source_name" | gzip -n > "$top_dir/SOURCES/$source_name.tar.gz"
 
 rendered_spec=$top_dir/SPECS/lensguard.spec
+rendered_service_spec=$top_dir/SPECS/lensguard-service.spec
 sed "s|@VERSION@|$version|g" \
     "$repo_root/packaging/rpm/lensguard.spec.in" > "$rendered_spec"
+sed "s|@VERSION@|$version|g" \
+    "$repo_root/packaging/rpm/lensguard-service.spec.in" > "$rendered_service_spec"
 rpmbuild -ba "$rendered_spec" --define "_topdir $top_dir"
+rpmbuild -ba "$rendered_service_spec" --define "_topdir $top_dir"
 mkdir -p -- "$output_dir"
 find "$top_dir/RPMS" -type f -name '*.rpm' -exec cp -t "$output_dir" {} +
 find "$top_dir/SRPMS" -type f -name '*.src.rpm' -exec cp -t "$output_dir" {} +
 install -m 0644 -- "$rendered_spec" "$output_dir/lensguard-$version.spec"
+install -m 0644 -- "$rendered_service_spec" \
+    "$output_dir/lensguard-service-$version.spec"
 printf '%s\n' "Created source-built RPM package(s) in $output_dir"

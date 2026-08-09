@@ -1,14 +1,14 @@
 # Maintainer: Younes Rabeh <younesrabeh@users.noreply.github.com>
-pkgname=lensguard
+pkgname=lensguard-service
 pkgver=@VERSION@
 pkgrel=1
-pkgdesc='GNOME Shell camera privacy indicator'
+pkgdesc='Camera monitor service for the Lens Guard GNOME extension'
 arch=('@ARCHITECTURE@')
 url='https://github.com/YounesRabeh/lensguard'
 license=('GPL-3.0-or-later')
-depends=('dbus' 'gnome-shell>=50' 'pipewire' 'systemd')
-conflicts=('lensguard-service')
-source=('lensguard-root.tar.gz')
+depends=('dbus' 'pipewire' 'systemd')
+conflicts=('lensguard')
+source=('lensguard-service-root.tar.gz')
 sha256sums=('@SHA256@')
 options=('strip' '!debug')
 

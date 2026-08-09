@@ -4,10 +4,21 @@ This guide is for people who want to use Lens Guard, not develop it.
 
 ## Install from a release
 
-Download the extension ZIP from the latest Lens Guard release, install it through GNOME
-Extensions, and enable **Lens Guard**. The release also includes packages for supported Linux
-distributions; install the package that matches your system when you want the bundled camera
-monitor service installed for you.
+Choose one installation path:
+
+1. **GNOME Extensions + service:** install Lens Guard from extensions.gnome.org (or install the
+   release ZIP), then install the matching `lensguard-service` package for your distribution. If
+   the service is missing, the Lens Guard menu tells you to install it.
+2. **One full package:** install the `lensguard` package for your distribution. It contains both
+   the extension and camera-monitor service.
+
+For example, install either `lensguard-service_*.deb` or `lensguard_*.deb` on Debian/Ubuntu,
+either `lensguard-service-*.rpm` or `lensguard-*.rpm` on Fedora, and either
+`lensguard-service-*.pkg.tar.zst` or `lensguard-*.pkg.tar.zst` on Arch. Do not install both native
+package variants: APT, DNF, and Pacman report their declared package conflict.
+
+Do not combine the Store extension with the full package. Lens Guard reports an installation
+conflict when both a per-user and system copy of its extension UUID are present.
 
 After installation, open Quick Settings and look for **Lens Guard**. Start a video call or another
 camera application to see the active application and camera appear there.
@@ -30,8 +41,9 @@ refresh its extension list.
 
 ## Remove Lens Guard
 
-Use the **Remove** action in GNOME Extensions for a release installation. For a source checkout,
-use the uninstall command documented in [Installation details](installation.md#uninstall).
+For the Store path, use **Remove** in GNOME Extensions and uninstall `lensguard-service` with your
+package manager. For the full-package path, uninstall `lensguard`. For a source checkout, use the
+command documented in [Installation details](installation.md#uninstall).
 
 ## Need help?
 

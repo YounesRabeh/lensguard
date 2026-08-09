@@ -5,6 +5,7 @@ export const ViewStatus = Object.freeze({
     INACTIVE: 'inactive',
     BACKEND_UNAVAILABLE: 'backend-unavailable',
     SERVICE_UNAVAILABLE: 'service-unavailable',
+    INSTALLATION_CONFLICT: 'installation-conflict',
 });
 
 const UNSAFE_DISPLAY_CHARACTERS =
@@ -80,6 +81,26 @@ export function normalizeSessions(sessions) {
 
 export function formatSessionLabel(session) {
     return `${session.applicationName} — ${session.cameraName}`;
+}
+
+export function applyInstallationConflictToViewState(state, conflict) {
+    if (!conflict)
+        return state;
+
+    return {
+        status: ViewStatus.INSTALLATION_CONFLICT,
+        serviceAvailable: false,
+        backendAvailable: false,
+        cameraActive: false,
+        panelIconVisible: true,
+        panelIconName: 'dialog-warning-symbolic',
+        backendWarningVisible: true,
+        title: 'Lens Guard conflict',
+        subtitle: 'Multiple extension copies installed',
+        accessibleLabel: 'Lens Guard has conflicting extension installations',
+        tooltip: 'Lens Guard: conflicting extension installations',
+        sessions: [],
+    };
 }
 
 export function createViewState(snapshot = {}) {

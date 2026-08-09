@@ -88,7 +88,7 @@ export async function run() {
         assert(indicator()._statusIcon.icon_name === 'dialog-warning-symbolic',
             'missing service incorrectly uses the active camera icon');
         assert(sessionLabels(indicator())[0] ===
-            'The LensGuard camera monitor service is not running.',
+            'Install lensguard-service for your distribution.',
         'missing service menu message is not useful');
 
         settings.set_boolean('show-backend-unavailable-warning', false);

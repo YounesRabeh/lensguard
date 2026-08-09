@@ -16,6 +16,7 @@ done < <(cd "$repo_root" && rg --files extension -g '*.js')
 
 gjs -m "$repo_root/extension/tests/validateMetadata.js" "$repo_root/extension/metadata.json"
 gjs -m "$repo_root/extension/tests/sessionModel.test.js"
+gjs -m "$repo_root/extension/tests/installationConflict.test.js"
 gjs -m "$repo_root/extension/tests/mockDataProvider.test.js"
 gjs -m "$repo_root/extension/tests/dbusPayload.test.js"
 gjs -m "$repo_root/extension/tests/dbusClient.test.js"

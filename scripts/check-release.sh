@@ -51,6 +51,11 @@ if rg -q '(^|/)(tests?|fixtures|mocks?)/|mockDataProvider|gnomeSmoke|gnomeScreen
     printf '%s\n' 'check-release.sh: extension contains development-only files' >&2
     exit 1
 fi
+if rg -q '(^|/)(camera-monitor|lensguard-v4l2-observer)$|\.(so([.]|$)|a|o|node|wasm|bin)$' \
+    <<<"$extension_entries"; then
+    printf '%s\n' 'check-release.sh: extension ZIP contains a native binary or library' >&2
+    exit 1
+fi
 
 source_entries=$(tar -tzf "$source_archive")
 for required in \
@@ -103,4 +108,18 @@ while IFS= read -r rpm_file; do
         '/usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io/metadata.json'
 done < <(find "$release_dir" -maxdepth 1 -type f -name "lensguard-$version-*.rpm" ! -name '*.src.rpm')
 
-printf 'Release checks passed for LensGuard %s (%s binary RPMs).\n' "$version" "$rpm_count"
+service_rpm_count=0
+while IFS= read -r rpm_file; do
+    [[ -n $rpm_file ]] || continue
+    ((service_rpm_count += 1))
+    [[ $(rpm -qp --queryformat '%{VERSION}' "$rpm_file") == "$version" ]]
+    rpm -qpl "$rpm_file" | rg -Fxq '/usr/libexec/lensguard/camera-monitor'
+    if rpm -qpl "$rpm_file" | rg -q '/usr/share/gnome-shell/extensions/'; then
+        printf '%s\n' 'check-release.sh: service RPM contains GNOME extension files' >&2
+        exit 1
+    fi
+done < <(find "$release_dir" -maxdepth 1 -type f \
+    -name "lensguard-service-$version-*.rpm" ! -name '*.src.rpm')
+
+printf 'Release checks passed for LensGuard %s (%s full RPMs, %s service RPMs).\n' \
+    "$version" "$rpm_count" "$service_rpm_count"

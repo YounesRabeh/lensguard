@@ -1,14 +1,14 @@
-![Lens Guard](docs/images/lensguard-banner.png)
+![LensGuard](docs/images/lensguard-banner.png)
 
 See which applications are using your camera, right from the GNOME desktop.
 
-Lens Guard is a small, privacy-focused GNOME Shell extension for Linux. When your camera is
+LensGuard is a small, privacy-focused GNOME Shell extension for Linux. When your camera is
 active, it shows a clear indicator and lets you see the application and camera involved from
 Quick Settings. When nothing is using the camera, the menu stays quiet.
 
-![Lens Guard showing active camera sessions](docs/images/step10-active-sessions.png)
+![LensGuard showing active camera sessions](docs/images/step10-active-sessions.png)
 
-## Why Lens Guard?
+## Why LensGuard?
 
 - Know when your camera is being used without opening another application.
 - See the active application and camera in one place.
@@ -16,18 +16,28 @@ Quick Settings. When nothing is using the camera, the menu stays quiet.
 - Keep your camera information local to your user session, no account or cloud service is needed.
 
 > [!NOTE]
-> Lens Guard uses the same user session that GNOME and PipeWire use. It does not need root access, sudo, or privileged camera permissions.
+> LensGuard uses the same user session that GNOME and PipeWire use. It does not need root access, sudo, or privileged camera permissions.
 
 ## Get started
 
-Install Lens Guard for your user account, then enable it in GNOME Extensions. The complete
+Install LensGuard for your user account, then enable it in GNOME Extensions. The complete
 installation and removal instructions are in the [Getting started guide](docs/getting-started.md).
+
+Release users can install:
+
+1. GNOME extension with the separate `lensguard-service` package.
+2. The full `lensguard` distro package.
+
+> [!IMPORTANT]
+> The native package manager prevents both package variants from being installed together. If a
+> GNOME Store copy and system-package copy coexist, LensGuard reports the extension conflict in
+> Quick Settings.
 
 If you are installing from the source repository, see the [installation guide](docs/installation.md).
 
 ## A note about detection
 
-Lens Guard currently detects camera sessions that appear in PipeWire, which covers the normal
+LensGuard currently detects camera sessions that appear in PipeWire, which covers the normal
 GNOME desktop and most modern applications. Direct applications that open `/dev/video*` without
 PipeWire, and some virtual-camera or multi-hop setups, are not detected yet. See
 [known limitations](docs/troubleshooting.md#known-limitations-and-ambiguous-graph-cases) for the
@@ -35,14 +45,14 @@ details and the planned direct-V4L2 work.
 
 ## Screenshots
 
-![Lens Guard reporting that camera monitoring is unavailable](docs/images/step10-backend-unavailable.png)
+![LensGuard reporting that camera monitoring is unavailable](docs/images/step10-backend-unavailable.png)
 
-Open the Lens Guard item in Quick Settings and choose **Preferences** to customize the indicator
+Open the LensGuard item in Quick Settings and choose **Preferences** to customize the indicator
 and warning behavior. Notifications are intentionally not used.
 
 ## Learn more
 
-- [Getting started](docs/getting-started.md) — install, enable, update, and remove Lens Guard.
+- [Getting started](docs/getting-started.md) — install, enable, update, and remove LensGuard.
 - [Installation details](docs/installation.md) — service activation and distribution packages.
 - [Troubleshooting](docs/troubleshooting.md) — fixes for common camera and service issues.
 - [Development guide](docs/development.md) — build, test, and contribute locally.
@@ -51,4 +61,4 @@ and warning behavior. Notifications are intentionally not used.
 
 ## License
 
-Lens Guard is free software released under the [GNU General Public License v3.0 or later](LICENSE).
+LensGuard is free software released under the [GNU General Public License v3.0 or later](LICENSE).

@@ -49,3 +49,20 @@ if find "$stage_root" -mindepth 1 -maxdepth 1 ! -name usr | rg -q .; then
 fi
 
 printf '%s\n' 'System-package paths, modes, versions, and production contents passed.'
+
+service_root=$test_root/service-root
+"$repo_root/scripts/stage-system-package.sh" \
+    --root "$service_root" \
+    --daemon-path /usr/libexec/lensguard/camera-monitor \
+    --package-name lensguard-service \
+    --service-only >/dev/null
+[[ -x $service_root/usr/libexec/lensguard/camera-monitor ]]
+[[ -f $service_root/usr/lib/systemd/user/camera-monitor.service ]]
+[[ -f $service_root/usr/share/dbus-1/services/io.github.younesrabeh.CameraMonitor.service ]]
+if [[ -e $service_root/usr/share/gnome-shell || \
+      -L $service_root/usr/share/gnome-shell ]]; then
+    printf '%s\n' 'service-only package unexpectedly contains GNOME extension files' >&2
+    exit 1
+fi
+
+printf '%s\n' 'Service-only package boundary passed.'

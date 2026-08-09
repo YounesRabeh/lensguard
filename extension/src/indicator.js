@@ -44,10 +44,16 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
             state.subtitle);
 
         this._sessionSection.removeAll();
+        if (state.status === 'installation-conflict') {
+            this._addInformationItem(
+                'Remove either the GNOME Store copy or the system package copy.');
+            return;
+        }
+
         if (state.status === 'service-unavailable') {
             this._addInformationItem(
                 state.backendWarningVisible
-                    ? 'The LensGuard camera monitor service is not running.'
+                    ? 'Install lensguard-service for your distribution.'
                     : 'Camera status is currently unavailable.');
             return;
         }

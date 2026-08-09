@@ -4,6 +4,6 @@
   "description": "Shows active camera applications in GNOME Shell.",
   "url": "https://github.com/YounesRabeh/lensguard",
   "shell-version": ["50"],
-  "version-name": "1.4.5",
+  "version-name": "1.5.0",
   "settings-schema": "org.gnome.shell.extensions.lensguard"
 }

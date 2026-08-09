@@ -6,7 +6,10 @@ import {
     normalizePreferences,
     readPreferences,
 } from '../src/preferences.js';
-import {createViewState} from '../src/sessionModel.js';
+import {
+    applyInstallationConflictToViewState,
+    createViewState,
+} from '../src/sessionModel.js';
 
 function assert(condition, message) {
     if (!condition)
@@ -61,6 +64,16 @@ assert(!quietServiceFailure.backendWarningVisible,
     'warning preference also applies when the daemon service is absent');
 assertEqual(quietServiceFailure.panelIconName, 'dialog-information-symbolic',
     'service absence uses a neutral icon when warnings are disabled');
+
+const installationConflict = applyInstallationConflictToViewState(
+    createViewState({backendAvailable: true}), true);
+const quietConflict = applyPreferencesToViewState(installationConflict, {
+    showBackendUnavailableWarning: false,
+});
+assertEqual(quietConflict.status, 'installation-conflict',
+    'monitoring preferences do not hide an installation conflict');
+assertEqual(quietConflict.subtitle, 'Multiple extension copies installed',
+    'installation conflict keeps its actionable message');
 
 const active = createViewState({
     backendAvailable: true,

@@ -37,6 +37,11 @@ export function readPreferences(settings) {
 export function applyPreferencesToViewState(state, values = {}) {
     const preferences = normalizePreferences(values);
     const hidePanelIndicator = !preferences.showPanelIndicator;
+    if (state.status === 'installation-conflict') {
+        return hidePanelIndicator
+            ? {...state, panelIconVisible: false}
+            : state;
+    }
     const monitoringFailure = state.status === 'backend-unavailable' ||
         state.status === 'service-unavailable';
     if (!monitoringFailure) {

@@ -1,30 +1,25 @@
-Name:           lensguard
+Name:           lensguard-service
 Version:        @VERSION@
 Release:        1%{?dist}
-Summary:        GNOME Shell camera privacy indicator
+Summary:        Camera monitor service for the Lens Guard GNOME extension
 License:        GPL-3.0-or-later
 URL:            https://github.com/younesrabeh/lensguard
 Source0:        lensguard-%{version}.tar.gz
 
 BuildRequires:  cargo
 BuildRequires:  clang
-BuildRequires:  glib2
-BuildRequires:  gnome-shell
 BuildRequires:  pkgconfig
 BuildRequires:  pipewire-devel
-BuildRequires:  ripgrep
 BuildRequires:  rust
 BuildRequires:  systemd-rpm-macros
-BuildRequires:  unzip
 Requires:       dbus
-Requires:       gnome-shell >= 50
 Requires:       pipewire
 Requires:       systemd
-Conflicts:      lensguard-service
+Conflicts:      lensguard
 
 %description
-LensGuard monitors active camera capture through PipeWire and shows the
-applications using the camera through a GNOME Shell extension.
+Installs the Lens Guard user daemon, systemd user unit, and D-Bus activation
+service. Install the GNOME extension separately from extensions.gnome.org.
 
 %prep
 %autosetup -n lensguard-%{version}
@@ -32,16 +27,14 @@ applications using the camera through a GNOME Shell extension.
 %build
 export CARGO_NET_OFFLINE=true
 cargo build --locked --offline --release -p camera-monitor
-./scripts/package-extension.sh build/extension
 
 %install
 install -d -m 0755 \
     %{buildroot}%{_libexecdir}/lensguard \
     %{buildroot}%{_userunitdir} \
     %{buildroot}%{_datadir}/dbus-1/services \
-    %{buildroot}%{_datadir}/gnome-shell/extensions/lensguard@younesrabeh.github.io \
-    %{buildroot}%{_datadir}/doc/lensguard \
-    %{buildroot}%{_datadir}/licenses/lensguard
+    %{buildroot}%{_datadir}/doc/lensguard-service \
+    %{buildroot}%{_datadir}/licenses/lensguard-service
 install -m 0755 target/release/camera-monitor \
     %{buildroot}%{_libexecdir}/lensguard/camera-monitor
 sed 's|@EXECUTABLE@|%{_libexecdir}/lensguard/camera-monitor|g' \
@@ -49,15 +42,12 @@ sed 's|@EXECUTABLE@|%{_libexecdir}/lensguard/camera-monitor|g' \
 sed 's|@EXECUTABLE@|%{_libexecdir}/lensguard/camera-monitor|g' \
     systemd/io.github.younesrabeh.CameraMonitor.service.in \
     > %{buildroot}%{_datadir}/dbus-1/services/io.github.younesrabeh.CameraMonitor.service
-unzip -q build/extension/lensguard@younesrabeh.github.io.shell-extension.zip \
-    -d %{buildroot}%{_datadir}/gnome-shell/extensions/lensguard@younesrabeh.github.io
-glib-compile-schemas --strict \
-    %{buildroot}%{_datadir}/gnome-shell/extensions/lensguard@younesrabeh.github.io/schemas
-install -m 0644 README.md %{buildroot}%{_datadir}/doc/lensguard/README.md
-install -m 0644 docs/installation.md %{buildroot}%{_datadir}/doc/lensguard/installation.md
+install -m 0644 README.md %{buildroot}%{_datadir}/doc/lensguard-service/README.md
+install -m 0644 docs/installation.md \
+    %{buildroot}%{_datadir}/doc/lensguard-service/installation.md
 install -m 0644 dbus/io.github.younesrabeh.CameraMonitor1.xml \
-    %{buildroot}%{_datadir}/doc/lensguard/io.github.younesrabeh.CameraMonitor1.xml
-install -m 0644 LICENSE %{buildroot}%{_datadir}/licenses/lensguard/LICENSE
+    %{buildroot}%{_datadir}/doc/lensguard-service/io.github.younesrabeh.CameraMonitor1.xml
+install -m 0644 LICENSE %{buildroot}%{_datadir}/licenses/lensguard-service/LICENSE
 
 %post
 %systemd_user_post camera-monitor.service
@@ -69,16 +59,15 @@ install -m 0644 LICENSE %{buildroot}%{_datadir}/licenses/lensguard/LICENSE
 %systemd_user_postun_with_restart camera-monitor.service
 
 %files
-%license %{_datadir}/licenses/lensguard/LICENSE
-%doc %{_datadir}/doc/lensguard/README.md
-%doc %{_datadir}/doc/lensguard/installation.md
-%doc %{_datadir}/doc/lensguard/io.github.younesrabeh.CameraMonitor1.xml
+%license %{_datadir}/licenses/lensguard-service/LICENSE
+%doc %{_datadir}/doc/lensguard-service/README.md
+%doc %{_datadir}/doc/lensguard-service/installation.md
+%doc %{_datadir}/doc/lensguard-service/io.github.younesrabeh.CameraMonitor1.xml
 %dir %{_libexecdir}/lensguard
 %{_libexecdir}/lensguard/camera-monitor
 %{_userunitdir}/camera-monitor.service
 %{_datadir}/dbus-1/services/io.github.younesrabeh.CameraMonitor.service
-%{_datadir}/gnome-shell/extensions/lensguard@younesrabeh.github.io
 
 %changelog
-* Fri Aug 07 2026 Younes Rabeh <younesrabeh@users.noreply.github.com> - @VERSION@-1
-- Initial package
+* Sun Aug 09 2026 Younes Rabeh <younesrabeh@users.noreply.github.com> - @VERSION@-1
+- Add service-only package for GNOME Store installations

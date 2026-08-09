@@ -2,6 +2,7 @@
 
 import {
     ViewStatus,
+    applyInstallationConflictToViewState,
     createViewState,
     formatSessionLabel,
     normalizeSessions,
@@ -124,6 +125,21 @@ function testServiceUnavailable() {
     assertEqual(state.sessions.length, 0, 'service loss clears stale sessions');
 }
 
+function testInstallationConflict() {
+    const normal = createViewState({backendAvailable: true, sessions: []});
+    const conflict = applyInstallationConflictToViewState(normal, true);
+    assertEqual(conflict.status, ViewStatus.INSTALLATION_CONFLICT,
+        'duplicate extension copies produce an explicit conflict state');
+    assertEqual(conflict.subtitle, 'Multiple extension copies installed',
+        'conflict state explains the duplicate installation');
+    assert(!conflict.cameraActive,
+        'installation conflict does not claim camera activity');
+    assertEqual(conflict.sessions.length, 0,
+        'installation conflict does not expose stale sessions');
+    assert(applyInstallationConflictToViewState(normal, false) === normal,
+        'no conflict preserves the original state');
+}
+
 function testSafeUnusualApplicationNames() {
     const sessions = normalizeSessions([{
         sessionId: 'unusual',
@@ -151,6 +167,7 @@ testDerivedState();
 testStableOrdering();
 testBackendUnavailable();
 testServiceUnavailable();
+testInstallationConflict();
 testSafeUnusualApplicationNames();
 
 print('Session model tests passed.');

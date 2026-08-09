@@ -53,4 +53,38 @@ find "$output_dir" -maxdepth 1 -type f \
     -o -name "lensguard-debug-$version-*.pkg.tar.*" \) -delete
 install -m 0644 -- "${packages[0]}" "$output_dir/$(basename -- "${packages[0]}")"
 install -m 0644 -- "$work_dir/PKGBUILD" "$output_dir/lensguard-$version-PKGBUILD"
-printf '%s\n' "Created Arch package(s) in $output_dir"
+
+service_work=$work_dir/service
+service_stage_root=$service_work/root
+"$repo_root/scripts/stage-system-package.sh" \
+    --root "$service_stage_root" \
+    --daemon-path /usr/lib/lensguard/camera-monitor \
+    --package-name lensguard-service \
+    --service-only
+tar -C "$service_work" -czf "$service_work/lensguard-service-root.tar.gz" root
+service_archive_sha256=$(sha256sum "$service_work/lensguard-service-root.tar.gz" | \
+    awk '{ print $1 }')
+sed \
+    -e "s|@VERSION@|$version|g" \
+    -e "s|@ARCHITECTURE@|$architecture|g" \
+    -e "s|@SHA256@|$service_archive_sha256|g" \
+    "$repo_root/packaging/arch/PKGBUILD.service.in" > "$service_work/PKGBUILD"
+(
+    cd "$service_work"
+    makepkg --noconfirm --cleanbuild --nodeps
+)
+mapfile -t service_packages < <(find "$service_work" -maxdepth 1 -type f \
+    -name "lensguard-service-$version-*-$architecture.pkg.tar.*")
+[[ ${#service_packages[@]} -eq 1 ]] || {
+    printf 'package-arch.sh: expected one service package, found %s\n' \
+        "${#service_packages[@]}" >&2
+    exit 1
+}
+find "$output_dir" -maxdepth 1 -type f \
+    \( -name "lensguard-service-$version-*.pkg.tar.*" \
+    -o -name "lensguard-service-debug-$version-*.pkg.tar.*" \) -delete
+install -m 0644 -- "${service_packages[0]}" \
+    "$output_dir/$(basename -- "${service_packages[0]}")"
+install -m 0644 -- "$service_work/PKGBUILD" \
+    "$output_dir/lensguard-service-$version-PKGBUILD"
+printf '%s\n' "Created full and service-only Arch packages in $output_dir"

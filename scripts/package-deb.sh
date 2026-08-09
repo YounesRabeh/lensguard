@@ -26,33 +26,51 @@ cleanup() {
 }
 trap cleanup EXIT
 
-stage_root=$work_dir/root
-"$repo_root/scripts/stage-system-package.sh" \
-    --root "$stage_root" \
-    --daemon-path /usr/lib/lensguard/camera-monitor
-strip --strip-unneeded "$stage_root/usr/lib/lensguard/camera-monitor"
-install -d -m 0755 -- "$stage_root/DEBIAN"
-install -m 0644 -- "$repo_root/packaging/deb/copyright.in" \
-    "$stage_root/usr/share/doc/lensguard/copyright"
 source_epoch=${SOURCE_DATE_EPOCH:-$(git -C "$repo_root" log -1 --format=%ct)}
 release_date=$(date --date="@$source_epoch" --rfc-email)
-printf '%s\n' \
-    "lensguard ($version) stable; urgency=medium" \
-    '' \
-    "  * Release LensGuard $version." \
-    '' \
-    " -- Younes Rabeh <younesrabeh@users.noreply.github.com>  $release_date" \
-    > "$work_dir/changelog"
-gzip -n -9 < "$work_dir/changelog" \
-    > "$stage_root/usr/share/doc/lensguard/changelog.gz"
-installed_size=$(du -sk "$stage_root/usr" | awk '{print $1}')
-sed \
-    -e "s|@VERSION@|$version|g" \
-    -e "s|@ARCHITECTURE@|$architecture|g" \
-    -e "s|@INSTALLED_SIZE@|$installed_size|g" \
-    "$repo_root/packaging/deb/control.in" > "$stage_root/DEBIAN/control"
-
 mkdir -p -- "$output_dir"
-package_path=$output_dir/lensguard_${version}_${architecture}.deb
-dpkg-deb --root-owner-group --build "$stage_root" "$package_path"
-printf '%s\n' "Created $package_path"
+
+build_package() {
+    local package_name=$1
+    local control_template=$2
+    local service_only=$3
+    local package_work=$work_dir/$package_name
+    local stage_root=$package_work/root
+    local stage_args=(
+        --root "$stage_root"
+        --daemon-path /usr/lib/lensguard/camera-monitor
+        --package-name "$package_name"
+    )
+    if [[ $service_only == true ]]; then
+        stage_args+=(--service-only)
+    fi
+
+    "$repo_root/scripts/stage-system-package.sh" "${stage_args[@]}"
+    strip --strip-unneeded "$stage_root/usr/lib/lensguard/camera-monitor"
+    install -d -m 0755 -- "$stage_root/DEBIAN"
+    install -m 0644 -- "$repo_root/packaging/deb/copyright.in" \
+        "$stage_root/usr/share/doc/$package_name/copyright"
+    printf '%s\n' \
+        "$package_name ($version) stable; urgency=medium" \
+        '' \
+        "  * Release Lens Guard $version." \
+        '' \
+        " -- Younes Rabeh <younesrabeh@users.noreply.github.com>  $release_date" \
+        > "$package_work/changelog"
+    gzip -n -9 < "$package_work/changelog" \
+        > "$stage_root/usr/share/doc/$package_name/changelog.gz"
+    local installed_size
+    installed_size=$(du -sk "$stage_root/usr" | awk '{print $1}')
+    sed \
+        -e "s|@VERSION@|$version|g" \
+        -e "s|@ARCHITECTURE@|$architecture|g" \
+        -e "s|@INSTALLED_SIZE@|$installed_size|g" \
+        "$control_template" > "$stage_root/DEBIAN/control"
+
+    local package_path=$output_dir/${package_name}_${version}_${architecture}.deb
+    dpkg-deb --root-owner-group --build "$stage_root" "$package_path"
+    printf '%s\n' "Created $package_path"
+}
+
+build_package lensguard "$repo_root/packaging/deb/control.in" false
+build_package lensguard-service "$repo_root/packaging/deb/service-control.in" true

@@ -1,9 +1,12 @@
 # Release packaging
 
-LensGuard is packaged as a system package containing the Rust daemon,
-systemd user unit, D-Bus activation file, and GNOME extension. Keeping these runtime components in
-one package prevents an extension/daemon protocol mismatch. A standalone extension ZIP is also
-produced for extension installation tests and development, but it still needs a compatible daemon.
+LensGuard supports two release installation paths:
+
+- the binary-free GNOME extension ZIP plus a service-only `lensguard-service` package; or
+- the full `lensguard` package containing the extension and service.
+
+The two native package variants conflict because they own the same daemon and activation files.
+The extension also reports a conflict when per-user and system copies of its UUID coexist.
 
 ## Supported environment
 
@@ -29,8 +32,8 @@ package when one exists, and uninstalled. Upgrade tests also verify that the pan
 preference is preserved.
 
 After the release workflow succeeds, the separate publish workflow creates a **draft** GitHub
-release containing only the standalone extension ZIP and the installable DEB, binary RPM, and Arch
-packages, plus checksums for those four files. Rerunning that publish workflow replaces an existing
+release containing the standalone extension ZIP and both full and service-only DEB, binary RPM,
+and Arch packages, plus checksums for those seven files. Rerunning that publish workflow replaces an existing
 draft without rebuilding packages.
 Reviewing and publishing the draft—and any later GNOME Extensions submission—remain deliberate
 publishing steps.
@@ -54,8 +57,10 @@ make release-candidate
 Artifacts are written under `dist/release/<version>/`:
 
 - `lensguard-<version>-*.rpm`: Fedora binary package;
+- `lensguard-service-<version>-*.rpm`: service-only Fedora package;
 - `lensguard-<version>-*.src.rpm`: Fedora package source;
 - `lensguard-<version>.spec`: concrete, independently reusable Fedora spec;
+- `lensguard-service-<version>.spec`: service-only Fedora spec;
 - `lensguard-debuginfo-<version>-*.rpm` and `lensguard-debugsource-<version>-*.rpm`: Fedora debugging packages;
 - `lensguard-extension-v<version>.zip`: standalone GNOME extension;
 - `camera-monitor-<version>-<architecture>`: release daemon diagnostic artifact;
@@ -85,7 +90,7 @@ rpm -qpl "lensguard-$version"-*.x86_64.rpm
 sudo dnf install "./lensguard-$version"-*.x86_64.rpm
 ```
 
-The package installs only under `/usr`:
+The full package installs only under `/usr`:
 
 - `/usr/libexec/lensguard/camera-monitor`
 - `/usr/lib/systemd/user/camera-monitor.service`
@@ -95,6 +100,10 @@ The package installs only under `/usr`:
 The daemon is activated on demand through the user session bus. It is not enabled as a system
 service and does not run as root. Log out and back in after the first system installation so GNOME
 Shell discovers the extension, then enable **Lens Guard** in Extensions.
+
+For an extension installed from extensions.gnome.org, install the matching
+`lensguard-service` package instead. It installs the daemon, systemd user unit, and D-Bus
+activation file, but nothing under `/usr/share/gnome-shell/extensions/`.
 
 ## Upgrade
 
@@ -116,6 +125,9 @@ sudo dnf remove lensguard
 
 Package-owned files are removed. User preferences may remain in dconf so reinstalling does not
 silently reset them. Remove a per-user development install with `make uninstall-local`.
+
+Store-extension users should remove the service with `sudo dnf remove lensguard-service`; this
+does not remove or modify the GNOME Store extension.
 
 ## Known detection limitation
 

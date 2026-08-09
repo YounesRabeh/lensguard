@@ -246,8 +246,10 @@ jobs:
       - name: Build and lint DEB
         run: |
           make package-deb
-          package=$(find dist/packages/deb -maxdepth 1 -type f -name '*.deb' -print -quit)
-          lintian --fail-on error "$package"
+          mapfile -t packages < <(find dist/packages/deb -maxdepth 1 \
+            -type f -name '*.deb' -print | sort)
+          test "${#packages[@]}" -eq 2
+          lintian --fail-on error "${packages[@]}"
 
       - name: Install, upgrade, activate, and uninstall DEB on Ubuntu 26.04
         shell: bash
@@ -261,7 +263,9 @@ jobs:
               apt-get update
               apt-get install --yes ca-certificates dbus-daemon jq
               current=$(find /src/dist/packages/deb -maxdepth 1 -type f \
-                -name "*.deb" -print -quit)
+                -name "lensguard_*.deb" -print -quit)
+              service=$(find /src/dist/packages/deb -maxdepth 1 -type f \
+                -name "lensguard-service_*.deb" -print -quit)
               previous=$(find /src/dist/previous/deb -maxdepth 1 -type f \
                 -name "*.deb" -print -quit || true)
               upgrade_home=/tmp/lensguard-upgrade-settings
@@ -285,6 +289,17 @@ jobs:
               /src/scripts/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor \
+                --expect-removed
+              apt-get install --yes "$service"
+              /src/scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/lib/lensguard/camera-monitor \
+                --service-only
+              apt-get remove --purge --yes lensguard-service
+              /src/scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/lib/lensguard/camera-monitor \
+                --service-only \
                 --expect-removed
             '
 
@@ -350,11 +365,14 @@ jobs:
               version=$(./scripts/project-version.sh)
               current=$(find /src/dist/packages/rpm -maxdepth 1 -type f \
                 -name "lensguard-$version-*.x86_64.rpm" -print -quit)
+              service=$(find /src/dist/packages/rpm -maxdepth 1 -type f \
+                -name "lensguard-service-$version-*.x86_64.rpm" -print -quit)
               mapfile -t rpm_artifacts < <(find /src/dist/packages/rpm -maxdepth 1 \
                 -type f -name "*.rpm" -print | sort)
               ((${#rpm_artifacts[@]} >= 4))
               rendered_spec=/src/dist/packages/rpm/lensguard-$version.spec
-              rpmlint "$rendered_spec" "${rpm_artifacts[@]}"
+              rendered_service_spec=/src/dist/packages/rpm/lensguard-service-$version.spec
+              rpmlint "$rendered_spec" "$rendered_service_spec" "${rpm_artifacts[@]}"
               previous=$(find /src/dist/previous/rpm -maxdepth 1 -type f \
                 -name "*.x86_64.rpm" -print -quit || true)
               upgrade_home=/tmp/lensguard-upgrade-settings
@@ -377,6 +395,17 @@ jobs:
               ./scripts/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/libexec/lensguard/camera-monitor \
+                --expect-removed
+              dnf --assumeyes install "$service"
+              ./scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/libexec/lensguard/camera-monitor \
+                --service-only
+              dnf --assumeyes remove lensguard-service
+              ./scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/libexec/lensguard/camera-monitor \
+                --service-only \
                 --expect-removed
             '
 
@@ -442,8 +471,12 @@ jobs:
               version=$(./scripts/project-version.sh)
               current=$(find /src/dist/packages/arch -maxdepth 1 -type f \
                 -name "lensguard-$version-*.pkg.tar.*" -print -quit)
+              service=$(find /src/dist/packages/arch -maxdepth 1 -type f \
+                -name "lensguard-service-$version-*.pkg.tar.*" -print -quit)
               generated_pkgbuild=/src/dist/packages/arch/lensguard-$version-PKGBUILD
-              namcap "$generated_pkgbuild" "$current" | tee /tmp/lensguard-namcap.log
+              generated_service_pkgbuild=/src/dist/packages/arch/lensguard-service-$version-PKGBUILD
+              namcap "$generated_pkgbuild" "$generated_service_pkgbuild" \
+                "$current" "$service" | tee /tmp/lensguard-namcap.log
               if grep -Eq "(^|[[:space:]])E:" /tmp/lensguard-namcap.log; then
                 exit 1
               fi
@@ -472,6 +505,17 @@ jobs:
               ./scripts/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor \
+                --expect-removed
+              pacman --upgrade --noconfirm "$service"
+              ./scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/lib/lensguard/camera-monitor \
+                --service-only
+              pacman --remove --noconfirm lensguard-service
+              ./scripts/test-installed-system-package.sh \
+                --version "$version" \
+                --daemon-path /usr/lib/lensguard/camera-monitor \
+                --service-only \
                 --expect-removed
             '
 

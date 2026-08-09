@@ -103,12 +103,15 @@ jobs:
             find release-artifacts -maxdepth 1 -type f \
               \( -name "lensguard-extension-v$version.zip" \
               -o -name "lensguard_${version}_amd64.deb" \
+              -o -name "lensguard-service_${version}_amd64.deb" \
               -o -name "lensguard-$version-*.x86_64.rpm" \
-              -o -name "lensguard-$version-*-x86_64.pkg.tar.zst" \) \
+              -o -name "lensguard-service-$version-*.x86_64.rpm" \
+              -o -name "lensguard-$version-*-x86_64.pkg.tar.zst" \
+              -o -name "lensguard-service-$version-*-x86_64.pkg.tar.zst" \) \
               -print | sort
           )
-          if ((${#portable_assets[@]} != 4)); then
-            printf 'Expected exactly four portable artifacts, found %s:\n' \
+          if ((${#portable_assets[@]} != 7)); then
+            printf 'Expected exactly seven portable artifacts, found %s:\n' \
               "${#portable_assets[@]}" >&2
             printf '  %s\n' "${portable_assets[@]}" >&2
             exit 1

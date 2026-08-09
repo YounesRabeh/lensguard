@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DbusClient} from './src/dbusClient.js';
 import {LensGuardIndicator} from './src/indicator.js';
+import {findInstalledExtensionCopies} from './src/installationConflict.js';
+import {applyInstallationConflictToViewState} from './src/sessionModel.js';
 import {
     applyPreferencesToViewState,
     readPreferences,
@@ -12,6 +17,14 @@ import {
 
 export default class LensGuardExtension extends Extension {
     enable() {
+        this._installationConflict = findInstalledExtensionCopies(
+            this.uuid,
+            GLib.get_user_data_dir(),
+            GLib.get_system_data_dirs(),
+            path => Gio.File.new_for_path(path).query_file_type(
+                Gio.FileQueryInfoFlags.NONE, null) === Gio.FileType.DIRECTORY
+        ).length > 1;
+
         this._settings = this.getSettings();
         this._settings.connectObject(
             'changed', () => this._render(), this);
@@ -39,14 +52,17 @@ export default class LensGuardExtension extends Extension {
         this._settings?.disconnectObject(this);
         this._settings = null;
         this._baseState = null;
+        this._installationConflict = false;
     }
 
     _render() {
         if (!this._indicator || !this._settings || !this._baseState)
             return;
 
+        const baseState = applyInstallationConflictToViewState(
+            this._baseState, this._installationConflict);
         this._indicator.render(applyPreferencesToViewState(
-            this._baseState,
+            baseState,
             readPreferences(this._settings)));
     }
 }

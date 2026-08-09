@@ -45,8 +45,9 @@ LensGuard will use one camera-detection path:
 - Emits a normal event only for non-broker direct V4L2 capture.
 - Suppresses capture owned by a trusted desktop camera broker, such as PipeWire, because GNOME
   is responsible for showing that path.
-- Suppresses unclassified capture and emits only an aggregate diagnostic; uncertain ownership
-  must never create a LensGuard session.
+- Suppresses unclassified capture from session state but exposes an explicit, non-identifying
+  “Unknown camera activity” diagnostic in the LensGuard menu; uncertain ownership must never
+  create a normal LensGuard session.
 - Uses a narrowly scoped eBPF program and the minimum privileges required by supported kernels and distributions.
 - Reports only metadata required to determine active camera capture.
 - Emits process identity, device identity, capture operation, timestamp, and operation result.
@@ -252,13 +253,13 @@ pub enum CaptureOwner {
   broker. Only this classification may produce a `DirectCaptureEvent` and a LensGuard session.
 - `BrokerOwned` means the capture is performed by a trusted broker such as PipeWire. It is
   suppressed because GNOME owns the user-facing indicator for brokered camera use.
-- `Unknown` means the observer cannot safely establish the process owner. It is suppressed and
-  recorded only as an aggregate diagnostic.
+- `Unknown` means the observer cannot safely establish the process owner. It is suppressed from
+  normal session state but exposed as an explicit “Unknown camera activity” diagnostic.
 
 The trusted-broker policy is a versioned file shipped and maintained by the native package. It
 must validate the executable's trusted identity and expected path; matching `comm`, argv, or a
 user-supplied process name is never enough. The observer must fail closed: a policy parse error,
-identity mismatch, or unsupported lookup produces `Unknown` rather than a visible session.
+identity mismatch, or unsupported lookup produces `Unknown` rather than a normal visible session.
 
 Broker suppression is not a PipeWire monitoring backend. It neither builds a media graph nor
 reports PipeWire sessions; it only prevents the observer from presenting the broker's V4L2 device
@@ -328,6 +329,9 @@ Rules:
 - Missing privileges, disabled BPF, unsupported kernels, SELinux denial, Secure Boot restrictions, absent packaging, service failure, or rejected IPC must be reported accurately.
 - The normal UI should remain focused on active applications and cameras.
 - Detailed observer status belongs in preferences, diagnostics, logs, or an expandable status area.
+- Unknown ownership is shown in the LensGuard menu as “Unknown camera activity” with no process,
+  application, or device identity. It must not create an application row or normal active-session
+  indicator.
 - The GNOME extension must not attempt privilege escalation or service installation.
 
 ## Event contract
@@ -383,6 +387,8 @@ Contract requirements:
   ```
 
 - Diagnostics must contain no PID, application name, command line, device path, or event history.
+- A non-zero unknown-event count exposes the stable UI label “Unknown camera activity”; it does
+  not expose the counter's individual events as sessions.
 - Keep display names, desktop-file metadata, icons, and GNOME-specific concepts out of the privileged observer.
 - Perform application enrichment only in the unprivileged user daemon.
 - Treat the observer as untrusted input despite being locally installed.
@@ -639,7 +645,8 @@ Keep the extension unprivileged and minimal:
 - show sessions only for confirmed `Direct` capture;
 - show application and camera information from the user daemon;
 - expose observer availability in diagnostics or preferences;
-- expose aggregate broker and unknown suppression diagnostics without identifying data;
+- expose aggregate broker suppression diagnostics and the “Unknown camera activity” status
+  without identifying data;
 - display a clear warning when monitoring is unavailable;
 - never perform privilege escalation;
 - never install, configure, or restart the observer;
@@ -785,8 +792,10 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Observer disconnect/reconnect tests.
 - [ ] Observer absence produces an explicit unavailable state.
 - [ ] No synthetic event can bypass confirmation rules.
-- [ ] Synthetic broker-owned and unknown events never create sessions, application rows, or panel
-  indicator state.
+- [ ] Synthetic broker-owned events never create sessions, application rows, or panel indicator
+  state.
+- [ ] Synthetic unknown events show “Unknown camera activity” in the LensGuard menu but never
+  create a normal session, application row, or direct-capture panel indicator.
 
 **Exit criteria**
 
@@ -858,7 +867,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Process exit ends all sessions owned by that process.
 - [ ] PID reuse cannot inherit an old session.
 - [ ] Broker-owned events never reach application enrichment or session state.
-- [ ] Unknown-owner events increment only aggregate diagnostics.
+- [ ] Unknown-owner events increment aggregate diagnostics and expose the “Unknown camera
+  activity” menu status without application enrichment.
 
 **Exit criteria**
 
@@ -875,7 +885,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Show the indicator only for confirmed direct sessions.
 - [ ] Show application and camera details.
 - [ ] Show monitoring-unavailable diagnostics.
-- [ ] Show non-identifying broker/unknown suppression diagnostics in preferences or diagnostics.
+- [ ] Show non-identifying broker suppression diagnostics and the “Unknown camera activity” menu
+  status in preferences or diagnostics.
 - [ ] Handle daemon restart and D-Bus reconnection.
 - [ ] Keep the extension free of privileged operations.
 - [ ] Keep the extension independent of observer IPC details.
@@ -885,7 +896,8 @@ Each iteration must be completed, tested, documented, and explicitly approved be
 - [ ] Extension enable/disable smoke test.
 - [ ] Confirmed synthetic session activates the indicator.
 - [ ] A broker-owned synthetic capture creates no LensGuard icon, tile state, or application row.
-- [ ] An unknown synthetic capture creates no LensGuard icon, tile state, or application row.
+- [ ] An unknown synthetic capture shows “Unknown camera activity” in the LensGuard menu but no
+  application row or normal session indicator.
 - [ ] Open-only event does not activate the indicator.
 - [ ] Session stop hides the indicator.
 - [ ] Daemon restart recovers state.
@@ -983,8 +995,8 @@ installation paths while preserving the extension/service privilege boundary.
 - [ ] Observer/user-daemon version mismatch behavior.
 - [ ] Extension/user-daemon D-Bus version mismatch behavior.
 - [ ] Package-installation test verifies broker-owned capture never creates a LensGuard session.
-- [ ] Package-installation test verifies unknown-owner capture is suppressed and diagnosed without
-  exposing process or device identity.
+- [ ] Package-installation test verifies unknown-owner capture shows “Unknown camera activity”
+  without exposing process or device identity or creating a normal session.
 - [ ] Packaging policy validation.
 - [ ] Reproducible build verification.
 - [ ] Full unit, integration, smoke, security, privacy, and performance suites.
@@ -1038,7 +1050,8 @@ installation paths while preserving the extension/service privilege boundary.
 - Observer missing required capability.
 - Observer blocked by kernel or security policy.
 - Trusted-broker policy missing, invalid, or version-mismatched.
-- Unknown owner is suppressed and only aggregate diagnostics are exposed.
+- Unknown owner is suppressed from normal sessions and exposed only as “Unknown camera activity”
+  plus aggregate diagnostics.
 - GNOME extension enable/disable.
 - User daemon restart.
 - Observer restart.
@@ -1079,7 +1092,7 @@ Allowed metadata must be documented and limited to:
 - capture operation and result;
 - monotonic timestamp;
 - observer availability;
-- aggregate broker/unknown suppression counters without event identity;
+- aggregate broker suppression counters and “Unknown camera activity” status without event identity;
 - application identity resolved locally by the unprivileged daemon.
 
 ### Performance tests
@@ -1103,7 +1116,8 @@ LensGuard may be released when it:
 - does not report a mere device open or probe as active capture;
 - distinguishes active sessions by process and camera;
 - reports only confirmed non-broker direct V4L2 sessions;
-- suppresses trusted broker-owned and unknown-owner capture before session state;
+- suppresses trusted broker-owned and unknown-owner capture before normal session state while
+  exposing the explicit unknown status;
 - prevents brokered capture from creating a duplicate LensGuard icon, application row, or
   notification;
 - uses an isolated, narrowly privileged observer delivered only through native service packages;

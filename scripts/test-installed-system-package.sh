@@ -4,6 +4,7 @@ set -euo pipefail
 version=
 daemon_path=
 expect_removed=false
+service_only=false
 uuid=lensguard@younesrabeh.github.io
 bus_name=io.github.younesrabeh.CameraMonitor
 object_path=/io/github/younesrabeh/CameraMonitor
@@ -11,7 +12,7 @@ interface_name=io.github.younesrabeh.CameraMonitor1
 
 usage() {
     printf '%s\n' \
-        'Usage: scripts/test-installed-system-package.sh --version VERSION --daemon-path PATH [--expect-removed]' \
+        'Usage: scripts/test-installed-system-package.sh --version VERSION --daemon-path PATH [--service-only] [--expect-removed]' \
         '' \
         'Validates an installed LensGuard system package and cold D-Bus activation.' \
         '--expect-removed    Assert that package-owned runtime files are absent instead.'
@@ -38,6 +39,10 @@ while (($#)); do
             expect_removed=true
             shift
             ;;
+        --service-only)
+            service_only=true
+            shift
+            ;;
         --help|-h)
             usage
             exit 0
@@ -57,11 +62,15 @@ extension_path=/usr/share/gnome-shell/extensions/$uuid
 metadata_path=$extension_path/metadata.json
 
 if $expect_removed; then
-    for owned_path in \
+    owned_paths=(
         "$daemon_path" \
         "$unit_path" \
-        "$activation_path" \
-        "$extension_path"; do
+        "$activation_path"
+    )
+    if ! $service_only; then
+        owned_paths+=("$extension_path")
+    fi
+    for owned_path in "${owned_paths[@]}"; do
         [[ ! -e $owned_path && ! -L $owned_path ]] || \
             die "package-owned path remains after uninstall: $owned_path"
     done
@@ -76,17 +85,27 @@ done
 [[ -x $daemon_path ]] || die "daemon is not executable: $daemon_path"
 [[ -f $unit_path ]] || die "user unit is missing: $unit_path"
 [[ -f $activation_path ]] || die "D-Bus activation file is missing: $activation_path"
-[[ -f $metadata_path ]] || die "extension metadata is missing: $metadata_path"
+if $service_only; then
+    [[ ! -e $extension_path && ! -L $extension_path ]] || \
+        die "service-only package contains extension files: $extension_path"
+else
+    [[ -f $metadata_path ]] || die "extension metadata is missing: $metadata_path"
+fi
 
 [[ $(stat -c '%a' "$daemon_path") == 755 ]] || die 'daemon mode is not 0755'
 [[ $(stat -c '%a' "$unit_path") == 644 ]] || die 'user-unit mode is not 0644'
 [[ $(stat -c '%a' "$activation_path") == 644 ]] || die 'D-Bus service mode is not 0644'
-[[ $(stat -c '%a' "$metadata_path") == 644 ]] || die 'extension metadata mode is not 0644'
+if ! $service_only; then
+    [[ $(stat -c '%a' "$metadata_path") == 644 ]] || \
+        die 'extension metadata mode is not 0644'
+fi
 
 [[ $($daemon_path --version) == "camera-monitor $version" ]] || \
     die 'installed daemon version does not match the package version'
-[[ $(jq -r '."version-name"' "$metadata_path") == "$version" ]] || \
-    die 'installed extension version does not match the package version'
+if ! $service_only; then
+    [[ $(jq -r '."version-name"' "$metadata_path") == "$version" ]] || \
+        die 'installed extension version does not match the package version'
+fi
 
 grep -Fq "ExecStart=\"$daemon_path\" --log-level info run" "$unit_path" || \
     die 'user unit does not launch the packaged daemon'
@@ -95,7 +114,7 @@ grep -Fq "Exec=\"$daemon_path\" --log-level info run" "$activation_path" || \
 grep -Fq 'SystemdService=camera-monitor.service' "$activation_path" || \
     die 'D-Bus activation file does not name the user unit'
 
-if find "$extension_path" -type f \
+if ! $service_only && find "$extension_path" -type f \
     \( -path '*/tests/*' -o -path '*/fixtures/*' -o -path '*/mocks/*' \) \
     -print -quit | grep -q .; then
     die 'installed extension contains development-only files'
