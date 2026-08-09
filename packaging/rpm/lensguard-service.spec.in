@@ -18,7 +18,7 @@ Requires:       systemd
 Conflicts:      lensguard
 
 %description
-Installs the Lens Guard user daemon, systemd user unit, and D-Bus activation
+Installs the Lens Guard user daemon, user service unit, and D-Bus activation
 service. Install the GNOME extension separately from extensions.gnome.org.
 
 %prep
