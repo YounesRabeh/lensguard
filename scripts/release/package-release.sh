@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-version=$("$repo_root/scripts/project-version.sh")
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+version=$("$repo_root/scripts/util/project-version.sh")
 release_tag=v$version
 output_dir=${1:-$repo_root/dist/release/$version}
 require_rpm=false
@@ -22,7 +22,7 @@ for option in "${@:2}"; do
             ;;
         *)
             printf '%s\n' \
-                'Usage: scripts/package-release.sh [OUTPUT_DIRECTORY] [--require-rpm|--skip-rpm] [--skip-license-audit]' >&2
+                'Usage: scripts/release/package-release.sh [OUTPUT_DIRECTORY] [--require-rpm|--skip-rpm] [--skip-license-audit]' >&2
             exit 2
             ;;
     esac
@@ -52,7 +52,7 @@ cleanup() {
 trap cleanup EXIT
 
 extension_dir=$work_dir/extension
-"$repo_root/scripts/package-extension.sh" "$extension_dir"
+"$repo_root/scripts/package/package-extension.sh" "$extension_dir"
 cp -- "$extension_dir/lensguard@younesrabeh.github.io.shell-extension.zip" \
     "$output_dir/lensguard-extension-$release_tag.zip"
 
@@ -95,13 +95,13 @@ if $skip_license_audit; then
     fi
     printf '%s\n' 'Using dependency license report produced by the release audit gate.'
 else
-    "$repo_root/scripts/audit-licenses.sh" "$license_report"
+    "$repo_root/scripts/release/audit-licenses.sh" "$license_report"
 fi
 
 if $skip_rpm; then
     printf '%s\n' 'RPM build intentionally skipped; native release workflow supplies it separately.'
 elif command -v rpmbuild >/dev/null; then
-    "$repo_root/scripts/package-rpm.sh"
+    "$repo_root/scripts/package/package-rpm.sh"
     find "$repo_root/dist/packages/rpm" -maxdepth 1 -type f \
         \( -name "lensguard-$version-*.rpm" \
         -o -name "lensguard-$version-*.src.rpm" \
@@ -143,5 +143,5 @@ install -m 0644 -- "$work_dir/manifest" "$output_dir/RELEASE-MANIFEST.txt"
 )
 install -m 0644 -- "$work_dir/SHA256SUMS" "$output_dir/SHA256SUMS"
 
-"$repo_root/scripts/check-release.sh" "$output_dir"
+"$repo_root/scripts/release/check-release.sh" "$output_dir"
 printf 'Created LensGuard %s release candidate in %s\n' "$version" "$output_dir"

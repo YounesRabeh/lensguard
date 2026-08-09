@@ -9,7 +9,7 @@ use_user_manager=true
 
 usage() {
     printf '%s\n' \
-        'Usage: scripts/uninstall-local.sh [--no-user-manager]' \
+        'Usage: scripts/install/uninstall-local.sh [--no-user-manager]' \
         '' \
         'Removes only files owned by the LensGuard per-user installer.' \
         '--no-user-manager    Remove staged files without calling the live user manager.'

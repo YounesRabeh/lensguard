@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 uuid=lensguard@younesrabeh.github.io
 bus_name=io.github.younesrabeh.CameraMonitor
 interface_file=$bus_name'1.xml'
@@ -12,7 +12,7 @@ package_name=lensguard
 
 usage() {
     printf '%s\n' \
-        'Usage: scripts/stage-system-package.sh --root DIRECTORY --daemon-path PATH [--service-only] [--package-name NAME]' \
+        'Usage: scripts/package/stage-system-package.sh --root DIRECTORY --daemon-path PATH [--service-only] [--package-name NAME]' \
         '' \
         'Builds the release daemon and stages LensGuard below DIRECTORY.' \
         '--service-only omits the GNOME extension for the Store-extension installation path.' \
@@ -110,7 +110,7 @@ if $include_extension; then
         rm -rf -- "$extension_work"
     }
     trap cleanup EXIT
-    "$repo_root/scripts/package-extension.sh" "$extension_work"
+    "$repo_root/scripts/package/package-extension.sh" "$extension_work"
     archive=$extension_work/$uuid.shell-extension.zip
     install -d -m 0755 -- "$extension_destination"
     unzip -q "$archive" -d "$extension_destination"

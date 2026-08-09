@@ -21,7 +21,7 @@ Steps:
 1. Run the isolated automated UI check:
 
    ```sh
-   ./scripts/smoke-extension.sh \
+   ./scripts/dev/smoke-extension.sh \
      dist/lensguard@younesrabeh.github.io.shell-extension.zip
    ```
 
@@ -94,7 +94,7 @@ Actual result:
 
 Logs collected:
 
-- `scripts/smoke-extension.sh` captured the isolated Shell log and rejected `Script failed`,
+- `scripts/dev/smoke-extension.sh` captured the isolated Shell log and rejected `Script failed`,
   extension load failures, and extension error states.
 - Final line: `GNOME Shell mock UI smoke test passed.`
 - Expected headless-session service warnings were present; no LensGuard or automation error was

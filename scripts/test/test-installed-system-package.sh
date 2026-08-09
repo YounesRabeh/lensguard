@@ -12,7 +12,7 @@ interface_name=io.github.younesrabeh.CameraMonitor1
 
 usage() {
     printf '%s\n' \
-        'Usage: scripts/test-installed-system-package.sh --version VERSION --daemon-path PATH [--service-only] [--expect-removed]' \
+        'Usage: scripts/test/test-installed-system-package.sh --version VERSION --daemon-path PATH [--service-only] [--expect-removed]' \
         '' \
         'Validates an installed LensGuard system package and cold D-Bus activation.' \
         '--expect-removed    Assert that package-owned runtime files are absent instead.'

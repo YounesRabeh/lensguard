@@ -76,7 +76,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
-          test "$RELEASE_TAG" = "v$(./scripts/project-version.sh)"
+          test "$RELEASE_TAG" = "v$(./scripts/util/project-version.sh)"
 
       - name: Download verified release bundle
         uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6

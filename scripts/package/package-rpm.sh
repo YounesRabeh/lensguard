@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 output_dir=$repo_root/dist/packages/rpm
 
 for command_name in cargo git gzip install mktemp rpmbuild sed tar; do
@@ -11,7 +11,7 @@ for command_name in cargo git gzip install mktemp rpmbuild sed tar; do
     }
 done
 
-version=$("$repo_root/scripts/project-version.sh")
+version=$("$repo_root/scripts/util/project-version.sh")
 [[ -n $version ]] || {
     printf '%s\n' 'package-rpm.sh: could not read package version' >&2
     exit 1

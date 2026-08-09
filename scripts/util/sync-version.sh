@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-version=$("$repo_root/scripts/project-version.sh")
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+version=$("$repo_root/scripts/util/project-version.sh")
 
 sed -i -E \
     "s|(^[[:space:]]*\"version-name\":[[:space:]]*\")[^\"]*(\".*)$|\\1$version\\2|" \

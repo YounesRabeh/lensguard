@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 output_arg=${1:-dist}
 
-workspace_version=$("$repo_root/scripts/project-version.sh")
+workspace_version=$("$repo_root/scripts/util/project-version.sh")
 if [[ -z $workspace_version ]]; then
     printf '%s\n' 'could not read [workspace.package] version from Cargo.toml' >&2
     exit 1

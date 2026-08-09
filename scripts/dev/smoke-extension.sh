@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 archive=${1:-dist/lensguard@younesrabeh.github.io.shell-extension.zip}
 log_file=$(mktemp --tmpdir lensguard-gnome-smoke.XXXXXX.log)
 trap 'rm -f -- "$log_file"' EXIT

@@ -32,7 +32,7 @@ applications using the camera through a GNOME Shell extension.
 %build
 export CARGO_NET_OFFLINE=true
 cargo build --locked --offline --release -p camera-monitor
-./scripts/package-extension.sh build/extension
+./scripts/package/package-extension.sh build/extension
 
 %install
 install -d -m 0755 \

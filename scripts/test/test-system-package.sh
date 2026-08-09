@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-version=$("$repo_root/scripts/project-version.sh")
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+version=$("$repo_root/scripts/util/project-version.sh")
 
 for command_name in find rg stat; do
     command -v "$command_name" >/dev/null || {
@@ -18,7 +18,7 @@ cleanup() {
 trap cleanup EXIT
 
 stage_root=$test_root/root
-"$repo_root/scripts/stage-system-package.sh" \
+"$repo_root/scripts/package/stage-system-package.sh" \
     --root "$stage_root" \
     --daemon-path /usr/libexec/lensguard/camera-monitor >/dev/null
 
@@ -51,7 +51,7 @@ fi
 printf '%s\n' 'System-package paths, modes, versions, and production contents passed.'
 
 service_root=$test_root/service-root
-"$repo_root/scripts/stage-system-package.sh" \
+"$repo_root/scripts/package/stage-system-package.sh" \
     --root "$service_root" \
     --daemon-path /usr/libexec/lensguard/camera-monitor \
     --package-name lensguard-service \

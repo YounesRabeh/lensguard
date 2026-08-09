@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 output_dir=$repo_root/dist/packages/deb
 
 for command_name in awk date dpkg-deb du git gzip install mktemp sed strip; do
@@ -11,7 +11,7 @@ for command_name in awk date dpkg-deb du git gzip install mktemp sed strip; do
     }
 done
 
-version=$("$repo_root/scripts/project-version.sh")
+version=$("$repo_root/scripts/util/project-version.sh")
 [[ -n $version ]] || { printf '%s\n' 'package-deb.sh: could not read package version' >&2; exit 1; }
 
 case $(uname -m) in
@@ -45,7 +45,7 @@ build_package() {
         stage_args+=(--service-only)
     fi
 
-    "$repo_root/scripts/stage-system-package.sh" "${stage_args[@]}"
+    "$repo_root/scripts/package/stage-system-package.sh" "${stage_args[@]}"
     strip --strip-unneeded "$stage_root/usr/lib/lensguard/camera-monitor"
     install -d -m 0755 -- "$stage_root/DEBIAN"
     install -m 0644 -- "$repo_root/packaging/deb/copyright.in" \

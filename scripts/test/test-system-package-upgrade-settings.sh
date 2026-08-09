@@ -8,7 +8,7 @@ schema_dir=${LENSGUARD_SCHEMA_DIR:-/usr/share/gnome-shell/extensions/lensguard@y
 
 if [[ $mode != write && $mode != check ]] || [[ -z $state_home || $state_home != /* ]]; then
     printf '%s\n' \
-        'Usage: scripts/test-system-package-upgrade-settings.sh {write|check} ABSOLUTE_STATE_HOME' >&2
+        'Usage: scripts/test/test-system-package-upgrade-settings.sh {write|check} ABSOLUTE_STATE_HOME' >&2
     exit 2
 fi
 

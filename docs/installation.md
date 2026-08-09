@@ -105,5 +105,5 @@ Pushing a version tag in the form `v<workspace-version>` (for example, `v1.3.0`)
 workflow. It verifies the full check suite, builds the extension bundle plus DEB, RPM, and Arch
 packages in their matching environments, then attaches the artifacts to a generated GitHub Release.
 
-`scripts/install-local.sh --artifact PATH --no-user-manager` is available for staged tests and
+`scripts/install/install-local.sh --artifact PATH --no-user-manager` is available for staged tests and
 packaging validation; ordinary users should use `make install-local`.

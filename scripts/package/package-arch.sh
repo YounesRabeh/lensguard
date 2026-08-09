@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 output_dir=$repo_root/dist/packages/arch
 
 for command_name in makepkg mktemp sed sha256sum tar; do
@@ -11,7 +11,7 @@ for command_name in makepkg mktemp sed sha256sum tar; do
     }
 done
 
-version=$("$repo_root/scripts/project-version.sh")
+version=$("$repo_root/scripts/util/project-version.sh")
 [[ -n $version ]] || { printf '%s\n' 'package-arch.sh: could not read package version' >&2; exit 1; }
 
 case $(uname -m) in
@@ -26,7 +26,7 @@ cleanup() {
 trap cleanup EXIT
 
 stage_root=$work_dir/root
-"$repo_root/scripts/stage-system-package.sh" \
+"$repo_root/scripts/package/stage-system-package.sh" \
     --root "$stage_root" \
     --daemon-path /usr/lib/lensguard/camera-monitor
 tar -C "$work_dir" -czf "$work_dir/lensguard-root.tar.gz" root
@@ -56,7 +56,7 @@ install -m 0644 -- "$work_dir/PKGBUILD" "$output_dir/lensguard-$version-PKGBUILD
 
 service_work=$work_dir/service
 service_stage_root=$service_work/root
-"$repo_root/scripts/stage-system-package.sh" \
+"$repo_root/scripts/package/stage-system-package.sh" \
     --root "$service_stage_root" \
     --daemon-path /usr/lib/lensguard/camera-monitor \
     --package-name lensguard-service \

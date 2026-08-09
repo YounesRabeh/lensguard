@@ -38,7 +38,7 @@ jobs:
               "$GITHUB_REF_NAME" >&2
             exit 1
           fi
-          version=$(./scripts/project-version.sh)
+          version=$(./scripts/util/project-version.sh)
           test "$GITHUB_REF_NAME" = "v$version"
           git fetch --no-tags \
             "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
@@ -122,8 +122,8 @@ jobs:
       - name: Audit dependency licenses
         run: |
           mkdir -p dist/license-audit
-          ./scripts/audit-licenses.sh \
-            "dist/license-audit/lensguard-$(./scripts/project-version.sh)-dependency-licenses.tsv"
+          ./scripts/release/audit-licenses.sh \
+            "dist/license-audit/lensguard-$(./scripts/util/project-version.sh)-dependency-licenses.tsv"
 
       - name: Upload verified dependency license report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -176,7 +176,7 @@ jobs:
       - name: Build complete core release artifacts
         shell: bash
         run: |
-          ./scripts/package-release.sh \
+          ./scripts/release/package-release.sh \
             dist/release-artifacts \
             --skip-rpm \
             --skip-license-audit
@@ -272,31 +272,31 @@ jobs:
               if [[ -n $previous ]]; then
                 previous_version=$(dpkg-deb --field "$previous" Version)
                 apt-get install --yes "$previous"
-                /src/scripts/test-installed-system-package.sh \
+                /src/scripts/test/test-installed-system-package.sh \
                   --version "$previous_version" \
                   --daemon-path /usr/lib/lensguard/camera-monitor
-                /src/scripts/test-system-package-upgrade-settings.sh write "$upgrade_home"
+                /src/scripts/test/test-system-package-upgrade-settings.sh write "$upgrade_home"
               fi
               apt-get install --yes "$current"
-              version=$(/src/scripts/project-version.sh)
-              /src/scripts/test-installed-system-package.sh \
+              version=$(/src/scripts/util/project-version.sh)
+              /src/scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor
               if [[ -n $previous ]]; then
-                /src/scripts/test-system-package-upgrade-settings.sh check "$upgrade_home"
+                /src/scripts/test/test-system-package-upgrade-settings.sh check "$upgrade_home"
               fi
               apt-get remove --purge --yes lensguard
-              /src/scripts/test-installed-system-package.sh \
+              /src/scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor \
                 --expect-removed
               apt-get install --yes "$service"
-              /src/scripts/test-installed-system-package.sh \
+              /src/scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor \
                 --service-only
               apt-get remove --purge --yes lensguard-service
-              /src/scripts/test-installed-system-package.sh \
+              /src/scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor \
                 --service-only \
@@ -362,7 +362,7 @@ jobs:
               cd /build/lensguard
               make package-rpm
               cp -a dist/packages/rpm/. /src/dist/packages/rpm/
-              version=$(./scripts/project-version.sh)
+              version=$(./scripts/util/project-version.sh)
               current=$(find /src/dist/packages/rpm -maxdepth 1 -type f \
                 -name "lensguard-$version-*.x86_64.rpm" -print -quit)
               service=$(find /src/dist/packages/rpm -maxdepth 1 -type f \
@@ -379,30 +379,30 @@ jobs:
               if [[ -n $previous ]]; then
                 previous_version=$(rpm -qp --queryformat "%{VERSION}" "$previous")
                 dnf --assumeyes install "$previous"
-                ./scripts/test-installed-system-package.sh \
+                ./scripts/test/test-installed-system-package.sh \
                   --version "$previous_version" \
                   --daemon-path /usr/libexec/lensguard/camera-monitor
-                ./scripts/test-system-package-upgrade-settings.sh write "$upgrade_home"
+                ./scripts/test/test-system-package-upgrade-settings.sh write "$upgrade_home"
               fi
               dnf --assumeyes install "$current"
-              ./scripts/test-installed-system-package.sh \
+              ./scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/libexec/lensguard/camera-monitor
               if [[ -n $previous ]]; then
-                ./scripts/test-system-package-upgrade-settings.sh check "$upgrade_home"
+                ./scripts/test/test-system-package-upgrade-settings.sh check "$upgrade_home"
               fi
               dnf --assumeyes remove lensguard
-              ./scripts/test-installed-system-package.sh \
+              ./scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/libexec/lensguard/camera-monitor \
                 --expect-removed
               dnf --assumeyes install "$service"
-              ./scripts/test-installed-system-package.sh \
+              ./scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/libexec/lensguard/camera-monitor \
                 --service-only
               dnf --assumeyes remove lensguard-service
-              ./scripts/test-installed-system-package.sh \
+              ./scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/libexec/lensguard/camera-monitor \
                 --service-only \
@@ -468,7 +468,7 @@ jobs:
               runuser --user builder -- make -C /build/lensguard package-arch
               cp -a /build/lensguard/dist/packages/arch/. /src/dist/packages/arch/
               cd /build/lensguard
-              version=$(./scripts/project-version.sh)
+              version=$(./scripts/util/project-version.sh)
               current=$(find /src/dist/packages/arch -maxdepth 1 -type f \
                 -name "lensguard-$version-*.pkg.tar.*" -print -quit)
               service=$(find /src/dist/packages/arch -maxdepth 1 -type f \
@@ -488,31 +488,31 @@ jobs:
                   sed -n "s/^pkgver = //p")
                 previous_version=${previous_pkgver%-*}
                 pacman --upgrade --noconfirm "$previous"
-                ./scripts/test-installed-system-package.sh \
+                ./scripts/test/test-installed-system-package.sh \
                   --version "$previous_version" \
                   --daemon-path /usr/lib/lensguard/camera-monitor
-                ./scripts/test-system-package-upgrade-settings.sh write "$upgrade_home"
+                ./scripts/test/test-system-package-upgrade-settings.sh write "$upgrade_home"
               fi
               pacman --upgrade --noconfirm "$current"
-              version=$(./scripts/project-version.sh)
-              ./scripts/test-installed-system-package.sh \
+              version=$(./scripts/util/project-version.sh)
+              ./scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor
               if [[ -n $previous ]]; then
-                ./scripts/test-system-package-upgrade-settings.sh check "$upgrade_home"
+                ./scripts/test/test-system-package-upgrade-settings.sh check "$upgrade_home"
               fi
               pacman --remove --noconfirm lensguard
-              ./scripts/test-installed-system-package.sh \
+              ./scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor \
                 --expect-removed
               pacman --upgrade --noconfirm "$service"
-              ./scripts/test-installed-system-package.sh \
+              ./scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor \
                 --service-only
               pacman --remove --noconfirm lensguard-service
-              ./scripts/test-installed-system-package.sh \
+              ./scripts/test/test-installed-system-package.sh \
                 --version "$version" \
                 --daemon-path /usr/lib/lensguard/camera-monitor \
                 --service-only \
@@ -572,7 +572,7 @@ jobs:
           set -euo pipefail
           cargo fetch --locked
           daemon=$(find release-artifacts -maxdepth 1 -type f \
-            -name "camera-monitor-$(./scripts/project-version.sh)-*" -print -quit)
+            -name "camera-monitor-$(./scripts/util/project-version.sh)-*" -print -quit)
           [[ -n $daemon ]] || {
             printf '%s\n' 'release bundle is missing the camera monitor binary' >&2
             exit 1
@@ -585,8 +585,8 @@ jobs:
               sort | xargs -r sha256sum > "$checksums"
             mv -- "$checksums" SHA256SUMS
           )
-          ./scripts/check-release.sh release-artifacts
-          ./scripts/check-package-artifacts.sh release-artifacts
+          ./scripts/release/check-release.sh release-artifacts
+          ./scripts/release/check-package-artifacts.sh release-artifacts
 
       - name: Upload complete verified bundle
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

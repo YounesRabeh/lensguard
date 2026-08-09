@@ -22,7 +22,8 @@ Before any native package job starts, a dedicated release gate audits the locked
 licenses and produces the dependency-license report. The DEB, RPM, Arch, and core artifact jobs all
 depend on that gate. Routine `make check` runs intentionally omit this release-only audit.
 
-The audit currently uses `scripts/audit-licenses.sh` and a reviewed SPDX-expression allowlist.
+The audit currently uses `scripts/release/audit-licenses.sh` and a reviewed SPDX-expression
+allowlist.
 Replace it with `cargo deny check licenses` only after a checked-in `deny.toml` reproduces the
 policy, handles the pinned Git dependency, and produces an equivalent release artifact.
 
@@ -70,7 +71,7 @@ Artifacts are written under `dist/release/<version>/`:
 
 `Cargo.toml` under `[workspace.package]` is the version source. Workspace crates inherit it, the
 daemon and D-Bus `Version` property compile it in, extension packaging writes it into
-`metadata.json`, and release filenames include it. `scripts/check-release.sh` rejects version
+`metadata.json`, and release filenames include it. `scripts/release/check-release.sh` rejects version
 mismatches.
 
 The RPM is compiled during `rpmbuild` from its source archive. Cargo dependencies, including the
@@ -83,7 +84,7 @@ a precompiled daemon.
 Inspect and verify the artifacts before installation:
 
 ```bash
-version=$(./scripts/project-version.sh)
+version=$(./scripts/util/project-version.sh)
 cd "dist/release/$version"
 sha256sum --check SHA256SUMS
 rpm -qpl "lensguard-$version"-*.x86_64.rpm

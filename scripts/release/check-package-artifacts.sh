@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 release_dir=${1:-}
-version=$("$repo_root/scripts/project-version.sh")
+version=$("$repo_root/scripts/util/project-version.sh")
 
 [[ -n $release_dir ]] || {
-    printf '%s\n' 'Usage: scripts/check-package-artifacts.sh RELEASE_DIRECTORY' >&2
+    printf '%s\n' 'Usage: scripts/release/check-package-artifacts.sh RELEASE_DIRECTORY' >&2
     exit 2
 }
 if [[ $release_dir != /* ]]; then

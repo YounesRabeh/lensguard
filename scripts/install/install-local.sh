@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 uuid=lensguard@younesrabeh.github.io
 bus_name=io.github.younesrabeh.CameraMonitor
 unit_name=camera-monitor.service
@@ -11,7 +11,7 @@ use_user_manager=true
 
 usage() {
     printf '%s\n' \
-        'Usage: scripts/install-local.sh [--artifact PATH] [--no-user-manager]' \
+        'Usage: scripts/install/install-local.sh [--artifact PATH] [--no-user-manager]' \
         '' \
         'Builds and installs LensGuard for the current user without root.' \
         '--artifact PATH      Install an existing camera-monitor binary instead of building release.' \
@@ -81,7 +81,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-"$repo_root/scripts/package-extension.sh" "$stage/package"
+"$repo_root/scripts/package/package-extension.sh" "$stage/package"
 archive=$stage/package/$uuid.shell-extension.zip
 mkdir -p -- "$stage/extension"
 unzip -q "$archive" -d "$stage/extension"

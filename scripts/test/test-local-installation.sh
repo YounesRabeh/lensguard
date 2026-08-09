@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 artifact=${1:-$repo_root/target/debug/camera-monitor}
 uuid=lensguard@younesrabeh.github.io
 bus_name=io.github.younesrabeh.CameraMonitor
@@ -36,7 +36,7 @@ run_installer() {
         HOME="$test_home" \
         XDG_DATA_HOME="$data_home" \
         XDG_CONFIG_HOME="$config_home" \
-        "$repo_root/scripts/install-local.sh" \
+        "$repo_root/scripts/install/install-local.sh" \
         --artifact "$artifact" \
         --no-user-manager
 }
@@ -46,7 +46,7 @@ run_uninstaller() {
         HOME="$test_home" \
         XDG_DATA_HOME="$data_home" \
         XDG_CONFIG_HOME="$config_home" \
-        "$repo_root/scripts/uninstall-local.sh" \
+        "$repo_root/scripts/install/uninstall-local.sh" \
         --no-user-manager
 }
 
@@ -65,7 +65,7 @@ installed_activation_marker=$installed_activation.lensguard-owned
 [[ -f $installed_activation_marker ]]
 [[ -f $installed_extension/schemas/gschemas.compiled ]]
 [[ -f $installed_extension/.lensguard-owned ]]
-version=$("$repo_root/scripts/project-version.sh")
+version=$("$repo_root/scripts/util/project-version.sh")
 [[ $("$installed_binary" --version) == "camera-monitor $version" ]]
 grep -Fq '"version-name": "'"$version"'"' "$installed_extension/metadata.json"
 grep -Fq 'Type=dbus' "$installed_unit"
@@ -73,7 +73,8 @@ grep -Fq 'BusName=io.github.younesrabeh.CameraMonitor' "$installed_unit"
 grep -Fq 'Restart=on-failure' "$installed_unit"
 grep -Fq 'SystemdService=camera-monitor.service' "$installed_activation"
 if grep -RqE '(^|[[:space:]])(sudo|pkexec)([[:space:]]|$)' \
-    "$repo_root/scripts/install-local.sh" "$repo_root/scripts/uninstall-local.sh"; then
+    "$repo_root/scripts/install/install-local.sh" \
+    "$repo_root/scripts/install/uninstall-local.sh"; then
     printf '%s\n' 'local integration scripts must not request root privileges' >&2
     exit 1
 fi

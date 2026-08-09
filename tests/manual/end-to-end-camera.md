@@ -48,7 +48,7 @@ Steps:
 4. Stop the diagnostic daemon, keep camera capture active, and run the full Shell test:
 
    ```sh
-   ./scripts/smoke-real-camera.sh
+   ./scripts/dev/smoke-real-camera.sh
    ```
 
 5. After `LENSGUARD_REAL_CAMERA_ACTIVE` appears, stop or suspend camera capture within 30 seconds.
