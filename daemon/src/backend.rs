@@ -123,10 +123,10 @@ where
             Ok(source) => {
                 info!("V4L2 observer connected");
                 attempt = 0;
-                if let Some(event) = F::connected_event()
-                    && !send(events, shutdown, event)
-                {
-                    return send_failure_exit(shutdown);
+                if let Some(event) = F::connected_event() {
+                    if !send(events, shutdown, event) {
+                        return send_failure_exit(shutdown);
+                    }
                 }
                 source
             }

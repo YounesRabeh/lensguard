@@ -121,7 +121,9 @@ static __attribute__((always_inline)) void decrement_tgid(u32 tgid) {
     if (*count <= 1)
         bpf_map_delete_elem(&ACTIVE_TGID, &tgid);
     else
-        __sync_fetch_and_sub(count, 1);
+        /* Clang 18's BPF backend cannot select AtomicLoadSub. BPF XADD with
+         * the two's-complement value is the equivalent atomic decrement. */
+        __sync_fetch_and_add(count, (u32)-1);
 }
 
 SEC("tracepoint/syscalls/sys_enter_ioctl")
@@ -204,4 +206,3 @@ int process_exit(void *ctx) {
 }
 
 char LICENSE[] SEC("license") = "GPL";
-
