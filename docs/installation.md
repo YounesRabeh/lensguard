@@ -108,11 +108,6 @@ From `extensions.gnome.org`:
 
 1. Open <https://extensions.gnome.org> in a browser, or open an extension-manager application.
 2. Search for **Lens Guard** and install it.
-3. Turn on Lens Guard in the Extensions application, or enable it from a terminal:
-
-   ```bash
-   gnome-extensions enable lensguard@younesrabeh.github.io
-   ```
 
 To install the extension ZIP built from this repository instead:
 
@@ -120,12 +115,23 @@ To install the extension ZIP built from this repository instead:
 ./scripts/package/package-extension.sh dist
 gnome-extensions install --force \
     dist/lensguard@younesrabeh.github.io.shell-extension.zip
-gnome-extensions enable lensguard@younesrabeh.github.io
 ```
 
 The ZIP installation is per-user and is appropriate beside the system-wide
 `lensguard-service` package. Do not use it beside the combined `lensguard` package, which already
 installs the same extension UUID system-wide.
+
+On Wayland, log out and back in after the first ZIP installation or after replacing a previously
+loaded copy. GNOME Shell does not discover a new extension directory during the existing session;
+running `gnome-extensions enable` too early reports that the extension does not exist even though
+the files were installed successfully.
+
+After Shell has discovered the extension, turn it on in the Extensions application or enable it
+from a terminal:
+
+```bash
+gnome-extensions enable lensguard@younesrabeh.github.io
+```
 
 Verify which extension copy GNOME Shell sees:
 
@@ -133,9 +139,8 @@ Verify which extension copy GNOME Shell sees:
 gnome-extensions info lensguard@younesrabeh.github.io
 ```
 
-If GNOME Shell had already loaded a different LensGuard copy during the current Wayland session,
-the command may still show the old path or version. Log out and back in once, then enable the
-extension again so Shell discovers the newly installed copy and its compiled settings schema.
+The command should show the expected path and version. If it still shows an old copy, log out and
+back in again before troubleshooting the extension files or compiled settings schema.
 
 The Store ZIP contains only GJS, preferences, schemas, metadata, and CSS.
 
