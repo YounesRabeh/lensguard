@@ -16,8 +16,8 @@ Conflicts:      lensguard
 
 %description
 Installs the Lens Guard user daemon, privileged metadata-only V4L2 observer,
-trusted-broker policy, systemd units, and D-Bus activation service. Install the
-GNOME extension separately from extensions.gnome.org.
+trusted-broker policy, system and user service units, and D-Bus activation
+service. Install the GNOME extension separately from extensions.gnome.org.
 
 %prep
 %autosetup -n lensguard-%{version}
