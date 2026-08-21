@@ -81,10 +81,10 @@ pub fn attach(sender: &mpsc::Sender<KernelEvent>) -> Result<AttachedBpf, BpfErro
                 match buffer.read_events(&mut buffers).await {
                     Ok(read) => {
                         for payload in buffers.iter().take(read.read) {
-                            if let Some(event) = parse_kernel_event(payload)
-                                && sender.send(event).await.is_err()
-                            {
-                                return;
+                            if let Some(event) = parse_kernel_event(payload) {
+                                if sender.send(event).await.is_err() {
+                                    return;
+                                }
                             }
                         }
                     }
