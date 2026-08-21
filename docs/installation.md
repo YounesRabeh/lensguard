@@ -149,6 +149,28 @@ The Store ZIP contains only GJS, preferences, schemas, metadata, and CSS.
 Install the distribution's `lensguard` package and enable the observer as above. Do not install a
 second copy of the extension from the GNOME website; both delivery paths use the same UUID.
 
+### Quickly replace only the extension
+
+When the combined `lensguard` package is installed and only the extension has changed, rebuild the
+ZIP and overwrite the system extension in place:
+
+```bash
+./scripts/package/package-extension.sh dist
+sudo unzip -o \
+    dist/lensguard@younesrabeh.github.io.shell-extension.zip \
+    -d /usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io
+sudo glib-compile-schemas \
+    /usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io/schemas
+```
+
+This replaces only the GJS extension, preferences, metadata, CSS, and schema. It does not rebuild,
+replace, or restart the daemon or V4L2 observer. Log out and back in to load the new extension on
+Wayland.
+
+Do not also run `gnome-extensions install` in this setup: that creates a second per-user copy with
+the same UUID. These files are owned by the combined package, so reinstalling `lensguard` later
+restores the packaged extension.
+
 ## Developer-only user install
 
 `make install-local` installs only the unprivileged daemon and extension for development. It

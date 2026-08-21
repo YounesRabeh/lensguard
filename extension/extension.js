@@ -33,7 +33,7 @@ export default class LensGuardExtension extends Extension {
             () => this.openPreferences());
         const quickSettings = Main.panel.statusArea.quickSettings;
         quickSettings.addExternalIndicator(this._indicator);
-        // External indicators are appended by default. Keep LensGuard in the
+        // External indicators are appended by default. Keep the app in the
         // first (far-left in LTR layouts) status-cluster slot.
         quickSettings._indicators.set_child_at_index(this._indicator, 0);
 
