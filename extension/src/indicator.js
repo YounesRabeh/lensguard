@@ -7,14 +7,23 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js';
 
-import {formatSessionLabel} from './sessionModel.js';
+import {ViewStatus, formatSessionLabel} from './sessionModel.js';
+
+const QUICK_SETTINGS_SUBTITLES = Object.freeze({
+    [ViewStatus.ACTIVE]: 'Camera in use',
+    [ViewStatus.INACTIVE]: 'Camera idle',
+    [ViewStatus.UNKNOWN_ACTIVITY]: 'Activity unknown',
+    [ViewStatus.OBSERVER_UNAVAILABLE]: 'Monitoring unavailable',
+    [ViewStatus.SERVICE_UNAVAILABLE]: 'Service unavailable',
+    [ViewStatus.INSTALLATION_CONFLICT]: 'Installation conflict',
+});
 
 const LensGuardToggle = GObject.registerClass(
 class LensGuardToggle extends QuickSettings.QuickMenuToggle {
     constructor(openPreferences) {
         super({
             title: 'LensGuard',
-            subtitle: 'No camera in use',
+            subtitle: 'Camera idle',
             iconName: 'camera-web-symbolic',
             toggleMode: false,
             menuButtonAccessibleName: 'Show active camera applications',
@@ -33,8 +42,11 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
     }
 
     render(state) {
-        this.title = state.title;
-        this.subtitle = state.subtitle;
+        // Keep the narrow tile easy to identify. The expanded menu carries the
+        // fuller status title and application count.
+        this.title = 'LensGuard';
+        this.subtitle = QUICK_SETTINGS_SUBTITLES[state.status] ??
+            'Status unavailable';
         this.iconName = state.panelIconName;
         this.checked = state.cameraActive;
         this.accessible_name = state.accessibleLabel;

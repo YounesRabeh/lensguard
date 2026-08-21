@@ -109,7 +109,7 @@ export async function run() {
         'warning preference did not restore while the service was absent');
 
         await service.start();
-        await waitFor(() => indicator()._toggle.subtitle === 'No camera in use',
+        await waitFor(() => indicator()._toggle.subtitle === 'Camera idle',
             'initial empty D-Bus snapshot did not render inactive state');
         assert(!indicator()._statusIcon.visible,
             'inactive D-Bus state did not hide the top-bar icon');
@@ -121,7 +121,8 @@ export async function run() {
         settings.set_boolean('show-panel-indicator', false);
         await waitFor(() => !indicator()._statusIcon.visible,
             'panel icon preference did not hide the active-camera icon');
-        assert(indicator()._toggle.subtitle === 'Camera in use',
+        assert(indicator()._toggle.title === 'LensGuard' &&
+            indicator()._toggle.subtitle === 'Camera in use',
             'hiding the panel icon incorrectly changed the Quick Settings state');
         settings.set_boolean('show-panel-indicator', true);
         await waitFor(() => indicator()._statusIcon.visible,
@@ -158,7 +159,7 @@ export async function run() {
 
         service.setObserverAvailable(false);
         await waitFor(() =>
-            indicator()._toggle.subtitle === 'Camera monitoring unavailable',
+            indicator()._toggle.subtitle === 'Monitoring unavailable',
         'backend failure did not use the default warning presentation');
         assert(indicator()._statusIcon.visible,
             'backend warning icon is not visible by default');
@@ -169,7 +170,7 @@ export async function run() {
             'show-indicator-during-observer-failure', false);
         await waitFor(() => !indicator()._statusIcon.visible,
             'indicator visibility preference did not apply live');
-        assert(indicator()._toggle.subtitle === 'Camera monitoring unavailable',
+        assert(indicator()._toggle.subtitle === 'Monitoring unavailable',
             'hiding the panel icon incorrectly erased the menu warning');
 
         settings.set_boolean('show-observer-unavailable-warning', false);
@@ -179,7 +180,7 @@ export async function run() {
                 'dialog-information-symbolic' &&
             indicator()._statusIcon.visible,
         'warning preference did not apply live');
-        assert(indicator()._toggle.subtitle === 'Camera status unavailable',
+        assert(indicator()._toggle.subtitle === 'Monitoring unavailable',
             'disabled warnings did not use neutral status language');
         assert(sessionLabels(indicator())[0] ===
             'Camera status is currently unavailable.',
@@ -194,7 +195,7 @@ export async function run() {
         await waitFor(() => indicators().length === 1,
             'indicator missing after preference persistence enable');
         await waitFor(() =>
-            indicator()._toggle.subtitle === 'Camera status unavailable',
+            indicator()._toggle.subtitle === 'Monitoring unavailable',
         're-enabling the extension did not preserve preferences');
         assert(indicator()._statusIcon.visible,
             'persisted backend indicator preference was lost');
@@ -202,7 +203,7 @@ export async function run() {
         settings.set_boolean('show-observer-unavailable-warning', true);
         settings.set_boolean('show-indicator-during-observer-failure', true);
         service.setObserverAvailable(true);
-        await waitFor(() => indicator()._toggle.subtitle === 'No camera in use',
+        await waitFor(() => indicator()._toggle.subtitle === 'Camera idle',
             'restoring the backend did not return to inactive state');
 
         service.startSession(discord);
@@ -210,7 +211,7 @@ export async function run() {
             'pre-restart session did not activate');
         service.stop();
         await waitFor(() =>
-            indicator()._toggle.subtitle === 'Camera monitor service unavailable',
+            indicator()._toggle.subtitle === 'Service unavailable',
         'daemon disappearance did not clear stale UI');
         assert(indicator()._statusIcon.icon_name === 'dialog-warning-symbolic',
             'daemon disappearance retained the active camera icon');

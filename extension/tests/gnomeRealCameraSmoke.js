@@ -62,7 +62,7 @@ export async function run() {
 
     await waitFor(() => !indicator()._statusIcon.visible,
         'top-bar icon did not hide after real camera capture stopped');
-    assert(indicator()._toggle.subtitle === 'No camera in use',
+    assert(indicator()._toggle.subtitle === 'Camera idle',
         `unexpected final subtitle: ${indicator()._toggle.subtitle}`);
 
     console.log('LENSGUARD_REAL_CAMERA_INACTIVE');

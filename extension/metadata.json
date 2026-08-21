@@ -1,7 +1,7 @@
 {
   "uuid": "lensguard@younesrabeh.github.io",
-  "name": "Lens Guard",
-  "description": "Shows applications using cameras directly through V4L2. Requires lensguard-service.",
+  "name": "LensGuard",
+  "description": "Shows apps using your camera via V4L2. Requires lensguard-service.",
   "url": "https://github.com/YounesRabeh/lensguard",
   "shell-version": ["50"],
   "version-name": "1.6.0",
