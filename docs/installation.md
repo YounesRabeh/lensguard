@@ -6,18 +6,138 @@ code.
 
 ## GNOME Extensions website
 
-1. Install `lensguard-service` with your distribution package manager.
-2. Enable its system observer:
+Use this installation route when the LensGuard GNOME extension comes from
+`extensions.gnome.org`. The native package must be installed separately because a GNOME
+extension is not allowed to install privileged system services.
+
+### 1. Install `lensguard-service`
+
+`lensguard-service` is the service-only native package. It installs:
+
+- the unprivileged `camera-monitor` user daemon and its D-Bus activation file;
+- the privileged, metadata-only `lensguard-v4l2-observer`;
+- the system and user systemd units; and
+- the trusted-broker policy.
+
+It deliberately does **not** install the GNOME extension. Do not install both
+`lensguard-service` and the combined `lensguard` package; they provide the same native files and
+are declared as conflicting packages.
+
+If `lensguard` is already installed, do not use `--skip-broken`: the full package already contains
+the native service. Choose one of these routes instead:
+
+- Keep `lensguard`, skip this service-package step, and use its system-installed GNOME extension.
+- To use the extension from `extensions.gnome.org`, replace `lensguard` with
+  `lensguard-service`. On Fedora, use `dnf swap` so removal and installation happen in one
+  transaction:
+
+  ```bash
+  sudo dnf swap lensguard lensguard-service
+  ```
+
+  When installing a locally built RPM, use the RPM path as the second argument instead of the
+  repository package name.
+
+If a configured package repository provides LensGuard, install it normally:
+
+```bash
+# Fedora
+sudo dnf install lensguard-service
+
+# Ubuntu or Debian
+sudo apt install lensguard-service
+
+# Arch Linux
+sudo pacman -S lensguard-service
+```
+
+If the package is not published in a configured repository, build the package for the current
+distribution from this repository and install the generated service-only artifact. Each `find`
+command below selects the newest non-debug binary package in `dist/packages`:
+
+```bash
+# Fedora
+make package-rpm
+service_rpm=$(find dist/packages/rpm -maxdepth 1 -type f \
+    -name 'lensguard-service-[0-9]*.rpm' ! -name '*.src.rpm' | sort -V | tail -n 1)
+if rpm -q lensguard >/dev/null 2>&1; then
+    sudo dnf swap lensguard "$service_rpm"
+else
+    sudo dnf install "$service_rpm"
+fi
+```
+
+```bash
+# Ubuntu or Debian
+make package-deb
+service_deb=$(find dist/packages/deb -maxdepth 1 -type f \
+    -name 'lensguard-service_[0-9]*_*.deb' | sort -V | tail -n 1)
+sudo apt install "$service_deb"
+```
+
+```bash
+# Arch Linux
+make package-arch
+service_arch=$(find dist/packages/arch -maxdepth 1 -type f \
+    -name 'lensguard-service-[0-9]*.pkg.tar.*' | sort -V | tail -n 1)
+sudo pacman -U "$service_arch"
+```
+
+The build command requires the distribution's normal package-building tools in addition to the
+development requirements described in [development.md](development.md). A downloaded release
+artifact can be installed with the same `dnf install ./file.rpm`, `apt install ./file.deb`, or
+`pacman -U ./file.pkg.tar.zst` form without building it locally.
+
+Do not substitute `make install-local` for this step. That target installs only an unprivileged
+development copy under the current user's home directory and cannot install the V4L2 observer.
+
+### 2. Enable the observer
+
+Enable and start the installed system observer:
+
+```bash
+sudo systemctl enable --now lensguard-v4l2-observer.service
+```
+
+### 3. Install the extension
+
+After installing `lensguard-service`, install the unprivileged extension using either of these
+methods.
+
+From `extensions.gnome.org`:
+
+1. Open <https://extensions.gnome.org> in a browser, or open an extension-manager application.
+2. Search for **Lens Guard** and install it.
+3. Turn on Lens Guard in the Extensions application, or enable it from a terminal:
 
    ```bash
-   sudo systemctl enable --now lensguard-v4l2-observer.service
+   gnome-extensions enable lensguard@younesrabeh.github.io
    ```
 
-3. Install the LensGuard extension from `extensions.gnome.org`.
+To install the extension ZIP built from this repository instead:
 
-The service package provides `/usr/lib*/lensguard/camera-monitor`,
-`lensguard-v4l2-observer`, the system and user units, D-Bus activation, and the versioned broker
-policy. The Store ZIP contains only GJS, preferences, schemas, metadata, and CSS.
+```bash
+./scripts/package/package-extension.sh dist
+gnome-extensions install --force \
+    dist/lensguard@younesrabeh.github.io.shell-extension.zip
+gnome-extensions enable lensguard@younesrabeh.github.io
+```
+
+The ZIP installation is per-user and is appropriate beside the system-wide
+`lensguard-service` package. Do not use it beside the combined `lensguard` package, which already
+installs the same extension UUID system-wide.
+
+Verify which extension copy GNOME Shell sees:
+
+```bash
+gnome-extensions info lensguard@younesrabeh.github.io
+```
+
+If GNOME Shell had already loaded a different LensGuard copy during the current Wayland session,
+the command may still show the old path or version. Log out and back in once, then enable the
+extension again so Shell discovers the newly installed copy and its compiled settings schema.
+
+The Store ZIP contains only GJS, preferences, schemas, metadata, and CSS.
 
 ## Native combined package
 
