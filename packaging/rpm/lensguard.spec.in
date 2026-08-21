@@ -10,45 +10,51 @@ BuildRequires:  cargo
 BuildRequires:  clang
 BuildRequires:  glib2
 BuildRequires:  gnome-shell
-BuildRequires:  pkgconfig
-BuildRequires:  pipewire-devel
 BuildRequires:  ripgrep
 BuildRequires:  rust
 BuildRequires:  systemd-rpm-macros
 BuildRequires:  unzip
 Requires:       dbus
 Requires:       gnome-shell >= 50
-Requires:       pipewire
 Requires:       systemd
 Conflicts:      lensguard-service
 
 %description
-LensGuard monitors active camera capture through PipeWire and shows the
-applications using the camera through a GNOME Shell extension.
+LensGuard monitors confirmed direct V4L2 camera capture and shows the
+applications using cameras directly through a GNOME Shell extension.
 
 %prep
 %autosetup -n lensguard-%{version}
 
 %build
 export CARGO_NET_OFFLINE=true
-cargo build --locked --offline --release -p camera-monitor
+cargo build --locked --offline --release -p camera-monitor -p lensguard-v4l2-observer
 ./scripts/package/package-extension.sh build/extension
 
 %install
 install -d -m 0755 \
     %{buildroot}%{_libexecdir}/lensguard \
+    %{buildroot}%{_unitdir} \
     %{buildroot}%{_userunitdir} \
     %{buildroot}%{_datadir}/dbus-1/services \
+    %{buildroot}%{_datadir}/lensguard \
     %{buildroot}%{_datadir}/gnome-shell/extensions/lensguard@younesrabeh.github.io \
     %{buildroot}%{_datadir}/doc/lensguard \
     %{buildroot}%{_datadir}/licenses/lensguard
 install -m 0755 target/release/camera-monitor \
     %{buildroot}%{_libexecdir}/lensguard/camera-monitor
+install -m 0755 target/release/lensguard-v4l2-observer \
+    %{buildroot}%{_libexecdir}/lensguard/lensguard-v4l2-observer
 sed 's|@EXECUTABLE@|%{_libexecdir}/lensguard/camera-monitor|g' \
     systemd/camera-monitor.service.in > %{buildroot}%{_userunitdir}/camera-monitor.service
 sed 's|@EXECUTABLE@|%{_libexecdir}/lensguard/camera-monitor|g' \
     systemd/io.github.younesrabeh.CameraMonitor.service.in \
     > %{buildroot}%{_datadir}/dbus-1/services/io.github.younesrabeh.CameraMonitor.service
+sed 's|@EXECUTABLE@|%{_libexecdir}/lensguard/lensguard-v4l2-observer|g' \
+    systemd/lensguard-v4l2-observer.service.in \
+    > %{buildroot}%{_unitdir}/lensguard-v4l2-observer.service
+install -m 0644 observer/policy/trusted-brokers-v1.json \
+    %{buildroot}%{_datadir}/lensguard/trusted-brokers-v1.json
 unzip -q build/extension/lensguard@younesrabeh.github.io.shell-extension.zip \
     -d %{buildroot}%{_datadir}/gnome-shell/extensions/lensguard@younesrabeh.github.io
 glib-compile-schemas --strict \
@@ -61,12 +67,15 @@ install -m 0644 LICENSE %{buildroot}%{_datadir}/licenses/lensguard/LICENSE
 
 %post
 %systemd_user_post camera-monitor.service
+%systemd_post lensguard-v4l2-observer.service
 
 %preun
 %systemd_user_preun camera-monitor.service
+%systemd_preun lensguard-v4l2-observer.service
 
 %postun
 %systemd_user_postun_with_restart camera-monitor.service
+%systemd_postun_with_restart lensguard-v4l2-observer.service
 
 %files
 %license %{_datadir}/licenses/lensguard/LICENSE
@@ -75,8 +84,11 @@ install -m 0644 LICENSE %{buildroot}%{_datadir}/licenses/lensguard/LICENSE
 %doc %{_datadir}/doc/lensguard/io.github.younesrabeh.CameraMonitor1.xml
 %dir %{_libexecdir}/lensguard
 %{_libexecdir}/lensguard/camera-monitor
+%{_libexecdir}/lensguard/lensguard-v4l2-observer
+%{_unitdir}/lensguard-v4l2-observer.service
 %{_userunitdir}/camera-monitor.service
 %{_datadir}/dbus-1/services/io.github.younesrabeh.CameraMonitor.service
+%{_datadir}/lensguard/trusted-brokers-v1.json
 %{_datadir}/gnome-shell/extensions/lensguard@younesrabeh.github.io
 
 %changelog

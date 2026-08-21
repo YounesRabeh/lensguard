@@ -122,8 +122,8 @@ try {
     assertEqual(states.at(-1).sessions[0].applicationName,
         'Camera after restart', 'restart synchronized the wrong session');
 
-    service.setBackendAvailable(false);
-    await waitFor(() => states.at(-1).status === 'backend-unavailable',
+    service.setObserverAvailable(false);
+    await waitFor(() => states.at(-1).status === 'observer-unavailable',
         'backend failure state did not reach the client');
     assert(!states.at(-1).cameraActive,
         'backend failure incorrectly claims camera activity');

@@ -23,13 +23,20 @@ stage_root=$test_root/root
     --daemon-path /usr/libexec/lensguard/camera-monitor >/dev/null
 
 daemon=$stage_root/usr/libexec/lensguard/camera-monitor
+observer=$stage_root/usr/lib/lensguard/lensguard-v4l2-observer
+observer_unit=$stage_root/usr/lib/systemd/system/lensguard-v4l2-observer.service
+broker_policy=$stage_root/usr/share/lensguard/trusted-brokers-v1.json
 unit=$stage_root/usr/lib/systemd/user/camera-monitor.service
 activation=$stage_root/usr/share/dbus-1/services/io.github.younesrabeh.CameraMonitor.service
 extension=$stage_root/usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io
 
 [[ -x $daemon ]]
+[[ -x $observer ]]
 [[ $("$daemon" --version) == "camera-monitor $version" ]]
 [[ $(stat --format='%a' "$daemon") == 755 ]]
+[[ $(stat --format='%a' "$observer") == 755 ]]
+[[ $(stat --format='%a' "$observer_unit") == 644 ]]
+[[ $(stat --format='%a' "$broker_policy") == 644 ]]
 [[ $(stat --format='%a' "$unit") == 644 ]]
 [[ $(stat --format='%a' "$activation") == 644 ]]
 [[ -f $extension/metadata.json ]]
@@ -57,6 +64,9 @@ service_root=$test_root/service-root
     --package-name lensguard-service \
     --service-only >/dev/null
 [[ -x $service_root/usr/libexec/lensguard/camera-monitor ]]
+[[ -x $service_root/usr/lib/lensguard/lensguard-v4l2-observer ]]
+[[ -f $service_root/usr/lib/systemd/system/lensguard-v4l2-observer.service ]]
+[[ -f $service_root/usr/share/lensguard/trusted-brokers-v1.json ]]
 [[ -f $service_root/usr/lib/systemd/user/camera-monitor.service ]]
 [[ -f $service_root/usr/share/dbus-1/services/io.github.younesrabeh.CameraMonitor.service ]]
 if [[ -e $service_root/usr/share/gnome-shell || \

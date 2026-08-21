@@ -4,11 +4,11 @@ import {createViewState} from '../../src/sessionModel.js';
 
 const MOCK_STATES = Object.freeze({
     inactive: {
-        backendAvailable: true,
+        observerAvailable: true,
         sessions: [],
     },
     'active-one': {
-        backendAvailable: true,
+        observerAvailable: true,
         sessions: [{
             sessionId: 'discord-camera',
             applicationName: 'Discord',
@@ -16,7 +16,7 @@ const MOCK_STATES = Object.freeze({
         }],
     },
     'active-multiple': {
-        backendAvailable: true,
+        observerAvailable: true,
         sessions: [{
             sessionId: 'meet-camera',
             applicationName: 'Firefox (Google Meet)',
@@ -27,8 +27,9 @@ const MOCK_STATES = Object.freeze({
             cameraName: 'Integrated Camera',
         }],
     },
-    'backend-unavailable': {
-        backendAvailable: false,
+    'observer-unavailable': {
+        observerAvailable: false,
+        observerAvailability: 'missing-capability',
         sessions: [],
     },
 });

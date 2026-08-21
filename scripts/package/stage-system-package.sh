@@ -70,14 +70,20 @@ relative_daemon_path=${daemon_path#/}
 daemon_destination=$stage_root/$relative_daemon_path
 systemd_destination=$stage_root/usr/lib/systemd/user/camera-monitor.service
 dbus_destination=$stage_root/usr/share/dbus-1/services/$bus_name.service
+observer_destination=$stage_root/usr/lib/lensguard/lensguard-v4l2-observer
+observer_unit_destination=$stage_root/usr/lib/systemd/system/lensguard-v4l2-observer.service
+policy_destination=$stage_root/usr/share/lensguard/trusted-brokers-v1.json
 
-cargo build --locked --release -p camera-monitor --manifest-path "$repo_root/Cargo.toml"
+cargo build --locked --release -p camera-monitor -p lensguard-v4l2-observer \
+    --manifest-path "$repo_root/Cargo.toml"
 cargo_target=${CARGO_TARGET_DIR:-$repo_root/target}
 if [[ $cargo_target != /* ]]; then
     cargo_target=$repo_root/$cargo_target
 fi
 daemon_artifact=$cargo_target/release/camera-monitor
+observer_artifact=$cargo_target/release/lensguard-v4l2-observer
 [[ -x $daemon_artifact ]] || die "release daemon was not created: $daemon_artifact"
+[[ -x $observer_artifact ]] || die "release V4L2 observer was not created: $observer_artifact"
 
 escape_template_value() {
     local value=$1
@@ -91,15 +97,23 @@ escape_template_value() {
 escaped_daemon_path=$(escape_template_value "$daemon_path")
 install -d -m 0755 -- \
     "$(dirname -- "$daemon_destination")" \
+    "$(dirname -- "$observer_destination")" \
     "$(dirname -- "$systemd_destination")" \
     "$(dirname -- "$dbus_destination")" \
+    "$(dirname -- "$observer_unit_destination")" \
+    "$(dirname -- "$policy_destination")" \
     "$stage_root/usr/share/doc/$package_name" \
     "$stage_root/usr/share/licenses/$package_name"
 install -m 0755 -- "$daemon_artifact" "$daemon_destination"
+install -m 0755 -- "$observer_artifact" "$observer_destination"
 sed "s|@EXECUTABLE@|$escaped_daemon_path|g" \
     "$repo_root/systemd/camera-monitor.service.in" > "$systemd_destination"
 sed "s|@EXECUTABLE@|$escaped_daemon_path|g" \
     "$repo_root/systemd/$bus_name.service.in" > "$dbus_destination"
+sed "s|@EXECUTABLE@|/usr/lib/lensguard/lensguard-v4l2-observer|g" \
+    "$repo_root/systemd/lensguard-v4l2-observer.service.in" > "$observer_unit_destination"
+install -m 0644 -- "$repo_root/observer/policy/trusted-brokers-v1.json" \
+    "$policy_destination"
 if $include_extension; then
     for command_name in gnome-extensions glib-compile-schemas unzip; do
         command -v "$command_name" >/dev/null || die "required command not found: $command_name"

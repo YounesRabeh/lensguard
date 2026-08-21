@@ -47,13 +47,13 @@ function testDuplicateHandling() {
 }
 
 function testDerivedState() {
-    const inactive = createViewState({backendAvailable: true, sessions: []});
+    const inactive = createViewState({observerAvailable: true, sessions: []});
     assertEqual(inactive.status, ViewStatus.INACTIVE, 'empty state is inactive');
     assert(!inactive.cameraActive, 'empty state does not claim camera use');
     assert(!inactive.panelIconVisible, 'inactive panel icon is hidden');
 
     const active = createViewState({
-        backendAvailable: true,
+        observerAvailable: true,
         sessions: [{
             sessionId: 'active',
             applicationName: 'Discord',
@@ -89,9 +89,10 @@ function testStableOrdering() {
         'input order does not affect display order');
 }
 
-function testBackendUnavailable() {
+function testObserverUnavailable() {
     const state = createViewState({
-        backendAvailable: false,
+        observerAvailable: false,
+        observerAvailability: 'missing-capability',
         sessions: [{
             sessionId: 'stale',
             applicationName: 'Stale application',
@@ -99,19 +100,19 @@ function testBackendUnavailable() {
         }],
     });
 
-    assertEqual(state.status, ViewStatus.BACKEND_UNAVAILABLE,
-        'backend failure has explicit status');
-    assert(!state.cameraActive, 'backend failure does not claim camera use');
-    assertEqual(state.sessions.length, 0, 'backend failure discards stale sessions');
-    assert(state.panelIconVisible, 'backend failure remains visible as a warning');
+    assertEqual(state.status, ViewStatus.OBSERVER_UNAVAILABLE,
+        'observer failure has explicit status');
+    assert(!state.cameraActive, 'observer failure does not claim camera use');
+    assertEqual(state.sessions.length, 0, 'observer failure discards stale sessions');
+    assert(state.panelIconVisible, 'observer failure remains visible as a warning');
     assertEqual(state.panelIconName, 'dialog-warning-symbolic',
-        'backend failure does not use the camera-active icon');
+        'observer failure does not use the camera-active icon');
 }
 
 function testServiceUnavailable() {
     const state = createViewState({
         serviceAvailable: false,
-        backendAvailable: true,
+        observerAvailable: true,
         sessions: [{
             sessionId: 'stale',
             applicationName: 'Stale application',
@@ -125,8 +126,24 @@ function testServiceUnavailable() {
     assertEqual(state.sessions.length, 0, 'service loss clears stale sessions');
 }
 
+function testUnknownActivityNeverCreatesDirectSessionState() {
+    const state = createViewState({
+        observerAvailable: true,
+        unknownCameraActivity: true,
+        sessions: [],
+    });
+    assertEqual(state.status, ViewStatus.UNKNOWN_ACTIVITY,
+        'unknown ownership has a stable diagnostic state');
+    assert(!state.cameraActive,
+        'unknown ownership never creates normal camera-active state');
+    assertEqual(state.sessions.length, 0,
+        'unknown ownership never creates an application row');
+    assertEqual(state.panelIconName, 'dialog-warning-symbolic',
+        'unknown ownership is distinguishable from direct capture');
+}
+
 function testInstallationConflict() {
-    const normal = createViewState({backendAvailable: true, sessions: []});
+    const normal = createViewState({observerAvailable: true, sessions: []});
     const conflict = applyInstallationConflictToViewState(normal, true);
     assertEqual(conflict.status, ViewStatus.INSTALLATION_CONFLICT,
         'duplicate extension copies produce an explicit conflict state');
@@ -165,8 +182,9 @@ testSessionTransformation();
 testDuplicateHandling();
 testDerivedState();
 testStableOrdering();
-testBackendUnavailable();
+testObserverUnavailable();
 testServiceUnavailable();
+testUnknownActivityNeverCreatesDirectSessionState();
 testInstallationConflict();
 testSafeUnusualApplicationNames();
 

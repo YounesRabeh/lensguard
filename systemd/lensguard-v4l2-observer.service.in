@@ -1,0 +1,34 @@
+[Unit]
+Description=LensGuard privileged V4L2 metadata observer
+Documentation=https://github.com/younesrabeh/lensguard
+Before=graphical.target
+
+[Service]
+Type=simple
+ExecStart="@EXECUTABLE@"
+Restart=on-failure
+RestartSec=2
+RuntimeDirectory=lensguard
+RuntimeDirectoryMode=0755
+UMask=0011
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_BPF CAP_PERFMON CAP_SYS_RESOURCE CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+AmbientCapabilities=CAP_BPF CAP_PERFMON CAP_SYS_RESOURCE CAP_DAC_READ_SEARCH CAP_SYS_PTRACE
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=no
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=no
+SystemCallArchitectures=native
+SystemCallFilter=@system-service bpf perf_event_open
+SystemCallErrorNumber=EPERM
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

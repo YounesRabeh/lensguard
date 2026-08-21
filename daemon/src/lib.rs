@@ -4,6 +4,7 @@ pub mod application;
 pub mod backend;
 pub mod backoff;
 pub mod config;
+pub mod observer;
 pub mod runtime;
 
 pub use config::{Command, Config, ConfigError, USAGE};

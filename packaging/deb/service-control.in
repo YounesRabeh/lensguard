@@ -4,11 +4,12 @@ Section: utils
 Priority: optional
 Architecture: @ARCHITECTURE@
 Installed-Size: @INSTALLED_SIZE@
-Depends: dbus, libc6 (>= 2.34), pipewire, systemd
+Depends: dbus, libc6 (>= 2.34), systemd
 Conflicts: lensguard
 Replaces: lensguard
 Maintainer: Younes Rabeh <younesrabeh@users.noreply.github.com>
 Homepage: https://github.com/YounesRabeh/lensguard
 Description: Camera monitor service for the Lens Guard GNOME extension
- Installs the Lens Guard user daemon, systemd user unit, and D-Bus activation
- service. The GNOME extension is installed separately from extensions.gnome.org.
+ Installs the unprivileged Lens Guard user daemon, privileged metadata-only V4L2
+ observer, systemd units, trusted-broker policy, and D-Bus activation service.
+ The GNOME extension is installed separately from extensions.gnome.org.

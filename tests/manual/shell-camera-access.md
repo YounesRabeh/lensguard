@@ -1,30 +1,21 @@
-# Terminal camera-access checks
+# Direct V4L2 camera-access checks
 
-These scripts open a camera from a terminal, without GNOME Camera or a graphical preview. They
-discard all frames and never create a recording.
-
-## Direct V4L2 access (tests the driver)
-
-Run a single camera client for 30 seconds:
+These scripts use GStreamer's `v4l2src` streaming path and discard frames without recording them.
 
 ```bash
+camera-monitor watch-v4l2
 ./tests/manual/shell-camera-access.sh /dev/video0 30
-```
-
-Run two simultaneous direct-V4L2 clients for 30 seconds:
-
-```bash
 ./tests/manual/shell-camera-access-multiple.sh /dev/video0 2 30
 ```
 
-Use a different `/dev/videoN` path when the integrated camera is exposed under another node.
-Start `camera-monitor watch-pipewire` or open LensGuard Quick Settings before running either
-script, then confirm the reported active session count and app rows.
+Verify one direct session per successful client, no session before stream-on, and prompt removal
+after stream-off or close. Some devices reject concurrent clients; the multiple-client script
+reports that hardware/driver limitation explicitly.
 
-Some camera drivers allow only one direct V4L2 streaming client. In that case the multiple-client
-script exits with a clear message; that is a driver limitation, not an application failure. Test
-multiple cameras by running the single-client script once per device instead.
+Also verify negative cases:
 
-LensGuard's current backend observes PipeWire graph sessions. A direct V4L2 process that does not
-create a PipeWire session is useful for checking the device and driver, but will not appear in
-LensGuard until direct-V4L2 monitoring is implemented.
+- `v4l2-ctl --device /dev/video0 --all` opens and queries the node but creates no session.
+- a capture attempt against an already-busy device creates no new confirmed session.
+- a desktop camera application using the trusted broker creates no LensGuard session or app row.
+- stopping or restarting the system observer clears active sessions and shows observer
+  unavailability.

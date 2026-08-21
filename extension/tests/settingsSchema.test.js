@@ -19,8 +19,8 @@ assert(schema, `compiled schema ${SCHEMA_ID} was not found`);
 
 const expectedDefaults = new Map([
     ['show-panel-indicator', true],
-    ['show-backend-unavailable-warning', true],
-    ['show-indicator-during-backend-failure', true],
+    ['show-observer-unavailable-warning', true],
+    ['show-indicator-during-observer-failure', true],
 ]);
 for (const [key, expected] of expectedDefaults) {
     assert(schema.has_key(key), `schema is missing ${key}`);

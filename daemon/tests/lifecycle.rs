@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
 
 use camera_app_resolver::ResolutionRequest;
 use camera_core::{
-    ApplicationIdentity, CameraDevice, CameraSession, DetectionBackend, DeviceId, MonitorEvent,
-    MonitorState, SessionId,
+    ApplicationIdentity, CameraDevice, CameraSession, CameraSessionState, DeviceId, MonitorEvent,
+    MonitorState, ObserverAvailability, SessionId,
 };
 use camera_dbus::{BUS_NAME, DbusService, INTERFACE_NAME, OBJECT_PATH, SessionDto};
 use camera_monitor::application::{IdentityResolver, run_application};
@@ -143,8 +143,12 @@ fn session(id: &str, name: &str) -> CameraSession {
             display_name: String::from("Test Camera"),
             node_name: None,
         },
-        started_at_unix_ms: 99,
-        backend: DetectionBackend::PipeWire,
+        process_start_time_ticks: 10,
+        thread_group_id: 7_200,
+        capture_file_descriptor: 3,
+        started_at_monotonic_ns: 99,
+        last_observed_at_monotonic_ns: 99,
+        state: CameraSessionState::Active,
     }
 }
 
@@ -314,7 +318,7 @@ async fn fake_backend_start_update_and_stop_reach_dbus() {
         Arc::clone(&shutdown),
         BackoffPolicy::default(),
     );
-    wait_property(&client, "BackendAvailable", true).await;
+    wait_property(&client, "ObserverAvailable", true).await;
 
     let initial = session("one", "Unknown application");
     source
@@ -356,14 +360,14 @@ async fn backend_failure_clears_stale_sessions_and_updates_availability() {
         Arc::clone(&shutdown),
         BackoffPolicy::new(Duration::from_millis(25), Duration::from_millis(25), 1),
     );
-    wait_property(&client, "BackendAvailable", true).await;
+    wait_property(&client, "ObserverAvailable", true).await;
 
     source
         .send(Ok(MonitorEvent::SessionStarted(session("stale", "Camera"))))
         .unwrap();
     wait_property(&client, "Active", true).await;
     source.send(Err(FakeError("simulated failure"))).unwrap();
-    wait_property(&client, "BackendAvailable", false).await;
+    wait_property(&client, "ObserverAvailable", false).await;
     wait_property(&client, "Active", false).await;
 
     let sessions: Vec<SessionDto> = client.call("GetActiveSessions", &()).await.unwrap();
@@ -392,15 +396,15 @@ async fn reconnect_snapshot_replaces_state_after_a_missed_remove() {
         BackoffPolicy::new(Duration::from_millis(25), Duration::from_millis(25), 1),
     );
 
-    wait_property(&client, "BackendAvailable", true).await;
+    wait_property(&client, "ObserverAvailable", true).await;
     first
         .send(Ok(MonitorEvent::SessionStarted(session("first", "Camera"))))
         .unwrap();
     wait_property(&client, "Active", true).await;
     first.send(Err(FakeError("simulated disconnect"))).unwrap();
-    wait_property(&client, "BackendAvailable", false).await;
+    wait_property(&client, "ObserverAvailable", false).await;
     wait_property(&client, "Active", false).await;
-    wait_property(&client, "BackendAvailable", true).await;
+    wait_property(&client, "ObserverAvailable", true).await;
 
     second
         .send(Ok(MonitorEvent::SessionStarted(session(
@@ -430,7 +434,7 @@ async fn reconnect_snapshot_replaces_state_after_a_missed_remove() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[allow(clippy::await_holding_lock)]
-async fn application_exit_before_pipewire_cleanup_keeps_privacy_state_active() {
+async fn application_exit_before_observer_cleanup_keeps_privacy_state_active() {
     let _dbus_test = DBUS_TEST_LOCK.lock().unwrap();
     let bus = TestBus::start();
     let pipeline = start_pipeline(&bus, initializing_state(), Duration::ZERO).await;
@@ -521,7 +525,10 @@ async fn idle_backend_shutdown_completes_within_a_bounded_duration() {
     );
     assert!(matches!(
         incoming.recv().await,
-        Some(MonitorEvent::BackendRecovered)
+        Some(MonitorEvent::ObserverAvailabilityChanged {
+            availability: ObserverAvailability::Available,
+            ..
+        })
     ));
 
     let started = Instant::now();

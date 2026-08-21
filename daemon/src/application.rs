@@ -62,7 +62,7 @@ where
 ///
 /// This entry point exists for deterministic fault injection. Production uses
 /// [`DEFAULT_RESOLUTION_TIMEOUT`]. If one blocking lookup exceeds the timeout, later events use
-/// their existing `PipeWire` identity until that worker exits; this prevents detached worker
+/// their existing observer identity until that worker exits; this prevents detached worker
 /// accumulation while preserving camera activity state.
 ///
 /// # Errors
@@ -187,7 +187,11 @@ where
 
 fn reduce_and_reconcile(state: &mut MonitorState, event: MonitorEvent) -> Vec<MonitorEvent> {
     let mut effective_events = Vec::new();
-    if matches!(event, MonitorEvent::BackendUnavailable { .. }) {
+    if matches!(
+        event,
+        MonitorEvent::ObserverAvailabilityChanged { availability, .. }
+            if !availability.is_available()
+    ) {
         for session in state.snapshot().active_sessions {
             let stop = MonitorEvent::SessionStopped(session.id);
             if state.apply(stop.clone()) {
@@ -208,8 +212,8 @@ mod tests {
 
     use camera_app_resolver::ResolutionRequest;
     use camera_core::{
-        ApplicationIdentity, CameraDevice, CameraSession, DetectionBackend, DeviceId, MonitorEvent,
-        MonitorState, SessionId,
+        ApplicationIdentity, CameraDevice, CameraSession, CameraSessionState, DeviceId,
+        MonitorEvent, MonitorState, ObserverAvailability, SessionId,
     };
     use tokio::sync::mpsc;
 
@@ -256,8 +260,12 @@ mod tests {
                 display_name: String::from("Front Camera"),
                 node_name: None,
             },
-            started_at_unix_ms: 10,
-            backend: DetectionBackend::PipeWire,
+            process_start_time_ticks: 10,
+            thread_group_id: 42,
+            capture_file_descriptor: 3,
+            started_at_monotonic_ns: 10,
+            last_observed_at_monotonic_ns: 10,
+            state: CameraSessionState::Active,
         }
     }
 
@@ -277,8 +285,9 @@ mod tests {
             .await
             .unwrap();
         incoming_tx
-            .send(MonitorEvent::BackendUnavailable {
-                reason: String::from("fake disconnect"),
+            .send(MonitorEvent::ObserverAvailabilityChanged {
+                availability: ObserverAvailability::BackendLost,
+                detail: String::from("fake disconnect"),
             })
             .await
             .unwrap();
@@ -294,12 +303,12 @@ mod tests {
         assert!(matches!(stop, MonitorEvent::SessionStopped(_)));
         assert!(matches!(
             unavailable,
-            MonitorEvent::BackendUnavailable { .. }
+            MonitorEvent::ObserverAvailabilityChanged { .. }
         ));
 
         let final_state = task.await.unwrap().unwrap();
         assert!(!final_state.active());
-        assert!(!final_state.backend_available());
+        assert!(!final_state.observer_available());
     }
 
     #[tokio::test]

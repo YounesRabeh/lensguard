@@ -21,7 +21,6 @@ const VALID_SESSION = [
     '  Example\nVideo  ',
     'camera-1',
     ' Integrated\tCamera ',
-    'pipewire',
     1234n,
     42,
 ];
@@ -40,9 +39,9 @@ function testMalformedAndDuplicatePayload() {
         VALID_SESSION,
         [...VALID_SESSION],
         ['too-short'],
-        ['bad\nid', '', 'Bad', 'camera', 'Camera', 'pipewire', 1n, 2],
-        ['bad-time', '', 'Bad', 'camera', 'Camera', 'pipewire', -1, 2],
-        ['bad-pid', '', 'Bad', 'camera', 'Camera', 'pipewire', 1n, -2],
+        ['bad\nid', '', 'Bad', 'camera', 'Camera', 1n, 2],
+        ['bad-time', '', 'Bad', 'camera', 'Camera', -1, 2],
+        ['bad-pid', '', 'Bad', 'camera', 'Camera', 1n, -2],
     ]]);
 
     assertEqual(sessions.length, 1,
@@ -57,7 +56,6 @@ function testFallbacksAndLengthLimit() {
         '',
         'camera-2',
         longName,
-        'pipewire',
         0,
         0,
     ] ]]);
@@ -71,18 +69,19 @@ function testFallbacksAndLengthLimit() {
 function testSnapshotValidation() {
     const available = normalizeDbusSnapshot({
         serviceAvailable: true,
-        backendAvailable: true,
+        observerAvailable: true,
+        observerAvailability: 'available',
         active: true,
         activeSessionCount: 1,
     }, [[VALID_SESSION]]);
-    assert(available.backendAvailable, 'valid backend property is retained');
+    assert(available.observerAvailable, 'valid observer property is retained');
     assertEqual(available.sessions.length, 1, 'valid snapshot includes sessions');
 
     const unavailable = normalizeDbusSnapshot({
         serviceAvailable: false,
-        backendAvailable: true,
+        observerAvailable: true,
     }, [[VALID_SESSION]]);
-    assert(!unavailable.backendAvailable, 'service loss forces backend unavailable');
+    assert(!unavailable.observerAvailable, 'service loss forces observer unavailable');
     assertEqual(unavailable.sessions.length, 0, 'service loss rejects stale payload');
 
     assertEqual(normalizeDbusSessions([]).length, 0,

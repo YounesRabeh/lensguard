@@ -49,7 +49,7 @@ Steps:
    GSETTINGS_SCHEMA_DIR="$lensguard_schema_dir" gsettings set \
      org.gnome.shell.extensions.lensguard mock-state active-multiple
    GSETTINGS_SCHEMA_DIR="$lensguard_schema_dir" gsettings set \
-     org.gnome.shell.extensions.lensguard mock-state backend-unavailable
+     org.gnome.shell.extensions.lensguard mock-state observer-unavailable
    ```
 
 5. Open Quick Settings after each change. Hover the visible LensGuard top-bar icon to inspect its
@@ -77,7 +77,7 @@ Expected result:
 - `active-one` shows the symbolic privacy camera icon and lists
   `Discord — Integrated Camera`.
 - `active-multiple` lists both Discord and `Firefox (Google Meet) — USB Webcam` in stable order.
-- `backend-unavailable` shows a warning icon and explicitly says monitoring is unavailable; the
+- `observer-unavailable` shows a warning icon and explicitly says monitoring is unavailable; the
   camera-active state is not checked.
 - Hover text and accessible labels describe the current state.
 - Repeated lifecycle cycles produce exactly one indicator and signal handler, and final disable
@@ -86,7 +86,7 @@ Expected result:
 Actual result:
 
 - The automated GNOME Shell 50.3 test passed all inactive, one-session, multi-session,
-  backend-unavailable, and three repeated enable/disable assertions.
+  observer-unavailable, and three repeated enable/disable assertions.
 - It verified exact app/camera menu labels, symbolic icon names, warning semantics, absence of
   duplicate indicators, and complete final removal.
 - Visual review commands are documented above; the automated run inspected the live Shell actor

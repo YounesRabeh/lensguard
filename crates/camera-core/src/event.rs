@@ -1,4 +1,4 @@
-use crate::{CameraSession, SessionId};
+use crate::{CameraSession, ObserverAvailability, SessionId, SuppressionDiagnostics};
 
 /// A backend observation applied to [`MonitorState`](crate::MonitorState).
 ///
@@ -12,8 +12,11 @@ pub enum MonitorEvent {
     SessionUpdated(CameraSession),
     /// An active relationship ended.
     SessionStopped(SessionId),
-    /// The monitoring backend cannot currently observe session state.
-    BackendUnavailable { reason: String },
-    /// The monitoring backend resumed observation.
-    BackendRecovered,
+    /// Availability of the privileged V4L2 observer changed.
+    ObserverAvailabilityChanged {
+        availability: ObserverAvailability,
+        detail: String,
+    },
+    /// Non-identifying suppression totals changed.
+    SuppressionDiagnosticsChanged(SuppressionDiagnostics),
 }

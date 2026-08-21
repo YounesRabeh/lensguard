@@ -1,109 +1,48 @@
-# Per-user installation
+# Installation
 
-LensGuard installs entirely into the current user's home directory. It does not use `sudo`,
-Polkit, a system service, or privileged camera access.
+LensGuard needs a native service because verified V4L2 operation results require a small
+privileged eBPF observer. The GNOME extension cannot and does not install or start privileged
+code.
 
-## Install
+## GNOME Extensions website
 
-From the repository root:
+1. Install `lensguard-service` with your distribution package manager.
+2. Enable its system observer:
 
-```sh
-make install-local
-gnome-extensions enable lensguard@younesrabeh.github.io
-```
+   ```bash
+   sudo systemctl enable --now lensguard-v4l2-observer.service
+   ```
 
-The installer performs a locked release build, packages the extension, compiles its GSettings
-schema, and installs these project-owned paths:
+3. Install the LensGuard extension from `extensions.gnome.org`.
 
-| Component | Local path |
-| --- | --- |
-| Daemon | `~/.local/libexec/lensguard/camera-monitor` |
-| systemd user unit | `${XDG_CONFIG_HOME:-~/.config}/systemd/user/camera-monitor.service` |
-| D-Bus activation | `${XDG_DATA_HOME:-~/.local/share}/dbus-1/services/io.github.younesrabeh.CameraMonitor.service` |
-| GNOME extension | `${XDG_DATA_HOME:-~/.local/share}/gnome-shell/extensions/lensguard@younesrabeh.github.io` |
+The service package provides `/usr/lib*/lensguard/camera-monitor`,
+`lensguard-v4l2-observer`, the system and user units, D-Bus activation, and the versioned broker
+policy. The Store ZIP contains only GJS, preferences, schemas, metadata, and CSS.
 
-Installation is idempotent. An active daemon is restarted only after its replacement files are
-ready; an inactive daemon stays stopped. The user D-Bus broker is asked to reload its activation
-configuration so a newly installed service is normally available without logout.
+## Native combined package
 
-GNOME Shell may require a logout/login before it discovers a newly installed extension on
-Wayland. This is a Shell extension-discovery limitation, not a daemon activation requirement.
+Install the distribution's `lensguard` package and enable the observer as above. Do not install a
+second copy of the extension from the GNOME website; both delivery paths use the same UUID.
 
-## Activation and service lifecycle
+## Developer-only user install
 
-The daemon is not enabled for eager login startup. Requesting
-`io.github.younesrabeh.CameraMonitor` activates `camera-monitor.service`; systemd considers it
-ready only after the process owns that D-Bus name. For example:
+`make install-local` installs only the unprivileged daemon and extension for development. It
+cannot install the observer and therefore correctly shows monitoring as unavailable unless a
+matching system `lensguard-service` is already installed.
 
-```sh
-gdbus call --session \
-  --dest io.github.younesrabeh.CameraMonitor \
-  --object-path /io/github/younesrabeh/CameraMonitor \
-  --method io.github.younesrabeh.CameraMonitor1.Ping
-```
+## Removal
 
-An unexpected failure restarts after two seconds, with systemd start-rate limiting. SIGTERM from
-`systemctl --user stop` is a clean shutdown and does not restart. The service belongs to the
-graphical session and stops when that session ends.
+Disable and remove the chosen extension copy, then remove the native package. Package removal must
+stop and remove the observer unit, binary, BPF object embedded in that binary, runtime socket, and
+trusted-broker policy. Per-user Store extension files are never modified by native package removal.
 
-The extension is only one possible D-Bus client. If it is absent or disabled, another user-session
-client can activate the same daemon and use the documented API. When no client requests the bus
-name, the service remains dormant; once activated it stays available for the rest of the session
-unless explicitly stopped.
+## Requirements
 
-Useful service commands are:
+- Linux with eBPF tracepoint and perf-event support
+- systemd system and user managers
+- a kernel policy that permits the package's bounded capabilities
+- GNOME Shell 50 or newer for the extension
 
-```sh
-systemctl --user status camera-monitor.service
-systemctl --user restart camera-monitor.service
-systemctl --user stop camera-monitor.service
-journalctl --user -u camera-monitor.service -f
-```
-
-## Uninstall
-
-```sh
-make uninstall-local
-```
-
-Uninstall stops the service, disables the exact LensGuard extension UUID when possible, removes
-the two exact integration files, and removes daemon/extension directories only when their
-installer ownership markers match. Repeated uninstall is harmless. Other extensions, user units,
-D-Bus services, settings, and home-directory files are not removed.
-
-## Distribution packaging
-
-The checked-in service templates use `@EXECUTABLE@` rather than embedding a home directory.
-Distribution packages should substitute an appropriate path such as
-`/usr/libexec/lensguard/camera-monitor`, install the unit under the distribution's systemd user
-unit directory, and install the D-Bus service under its session-service directory.
-
-Two package variants are produced:
-
-- `lensguard-service` contains only the daemon and service integration for users of the GNOME
-  Store extension.
-- `lensguard` contains both the daemon and a system extension for a fully package-managed install.
-
-The package variants conflict because their daemon files overlap. A per-user Store extension and
-the system extension must not coexist; Lens Guard displays a conflict warning when both UUID paths
-are present.
-
-The repository provides package build commands for the main Linux distribution families:
-
-```sh
-make package-rpm   # Fedora, RHEL, openSUSE
-make package-deb   # Debian, Ubuntu, Linux Mint, Pop!_OS
-make package-arch  # Arch, Manjaro, EndeavourOS
-```
-
-Each command creates full and service-only artifacts under `dist/packages/` and builds the release daemon for the
-current architecture. Run the command in a matching distribution environment (or its container or
-CI runner): a Fedora-built daemon is not guaranteed to run on an older Debian or Ubuntu release.
-The required native builders are `rpmbuild`, `dpkg-deb`, and `makepkg`, respectively.
-
-Pushing a version tag in the form `v<workspace-version>` (for example, `v1.3.0`) runs the release
-workflow. It verifies the full check suite, builds the extension bundle plus DEB, RPM, and Arch
-packages in their matching environments, then attaches the artifacts to a generated GitHub Release.
-
-`scripts/install/install-local.sh --artifact PATH --no-user-manager` is available for staged tests and
-packaging validation; ordinary users should use `make install-local`.
+Secure Boot lockdown, SELinux/AppArmor policy, containers, or disabled unprivileged/perf BPF
+facilities can make the observer unavailable. LensGuard exposes the specific availability category
+instead of falling back to another detector.

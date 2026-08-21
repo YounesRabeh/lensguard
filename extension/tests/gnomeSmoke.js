@@ -72,8 +72,8 @@ export async function run() {
         settings = extension.stateObj?._settings;
         assert(settings,
             'loaded extension did not retain its GSettings instance');
-        settings.reset('show-backend-unavailable-warning');
-        settings.reset('show-indicator-during-backend-failure');
+        settings.reset('show-observer-unavailable-warning');
+        settings.reset('show-indicator-during-observer-failure');
         settings.reset('show-panel-indicator');
         const preferencesItem = indicator()._toggle.menu
             ._getMenuItems()
@@ -91,7 +91,7 @@ export async function run() {
             'Install lensguard-service for your distribution.',
         'missing service menu message is not useful');
 
-        settings.set_boolean('show-backend-unavailable-warning', false);
+        settings.set_boolean('show-observer-unavailable-warning', false);
         await waitFor(() =>
             indicator()._statusIcon.icon_name ===
                 'dialog-information-symbolic',
@@ -99,7 +99,7 @@ export async function run() {
         assert(sessionLabels(indicator())[0] ===
             'Camera status is currently unavailable.',
         'service-absence warning preference did not update the menu');
-        settings.set_boolean('show-backend-unavailable-warning', true);
+        settings.set_boolean('show-observer-unavailable-warning', true);
         await waitFor(() =>
             indicator()._statusIcon.icon_name ===
                 'dialog-warning-symbolic',
@@ -153,7 +153,7 @@ export async function run() {
         await waitFor(() => !indicator()._statusIcon.visible,
             'final D-Bus stop event did not hide the icon');
 
-        service.setBackendAvailable(false);
+        service.setObserverAvailable(false);
         await waitFor(() =>
             indicator()._toggle.subtitle === 'Camera monitoring unavailable',
         'backend failure did not use the default warning presentation');
@@ -163,14 +163,14 @@ export async function run() {
             'backend failure did not use the warning icon by default');
 
         settings.set_boolean(
-            'show-indicator-during-backend-failure', false);
+            'show-indicator-during-observer-failure', false);
         await waitFor(() => !indicator()._statusIcon.visible,
             'indicator visibility preference did not apply live');
         assert(indicator()._toggle.subtitle === 'Camera monitoring unavailable',
             'hiding the panel icon incorrectly erased the menu warning');
 
-        settings.set_boolean('show-backend-unavailable-warning', false);
-        settings.set_boolean('show-indicator-during-backend-failure', true);
+        settings.set_boolean('show-observer-unavailable-warning', false);
+        settings.set_boolean('show-indicator-during-observer-failure', true);
         await waitFor(() =>
             indicator()._statusIcon.icon_name ===
                 'dialog-information-symbolic' &&
@@ -196,9 +196,9 @@ export async function run() {
         assert(indicator()._statusIcon.visible,
             'persisted backend indicator preference was lost');
 
-        settings.set_boolean('show-backend-unavailable-warning', true);
-        settings.set_boolean('show-indicator-during-backend-failure', true);
-        service.setBackendAvailable(true);
+        settings.set_boolean('show-observer-unavailable-warning', true);
+        settings.set_boolean('show-indicator-during-observer-failure', true);
+        service.setObserverAvailable(true);
         await waitFor(() => indicator()._toggle.subtitle === 'No camera in use',
             'restoring the backend did not return to inactive state');
 
@@ -237,8 +237,8 @@ export async function run() {
         await waitFor(() => indicators().length === 0,
             'indicator survived final disable');
     } finally {
-        settings?.reset('show-backend-unavailable-warning');
-        settings?.reset('show-indicator-during-backend-failure');
+        settings?.reset('show-observer-unavailable-warning');
+        settings?.reset('show-indicator-during-observer-failure');
         settings?.reset('show-panel-indicator');
         service.stop();
     }

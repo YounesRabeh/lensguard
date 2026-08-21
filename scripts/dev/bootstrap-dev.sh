@@ -19,8 +19,7 @@ printf '%s\n' 'LensGuard development prerequisite check'
 check_command cargo 'Rust builds and tests'
 check_command rustc 'Rust compiler'
 check_command rustfmt 'Rust formatting'
-check_command clang 'PipeWire binding generation'
-check_command pkg-config 'native PipeWire library discovery'
+check_command clang 'eBPF object compilation'
 check_command gnome-shell 'GNOME Shell compatibility discovery'
 check_command gnome-extensions 'extension packaging'
 check_command gjs 'extension syntax checks'
@@ -30,10 +29,6 @@ check_command rg 'source-file discovery'
 check_command glib-compile-schemas 'extension schema validation'
 check_command gnome-shell-test-tool 'isolated extension smoke tests'
 check_command dbus-run-session 'isolated test session bus'
-check_command pipewire 'PipeWire runtime'
-check_command pw-cli 'PipeWire diagnostics'
-check_command wireplumber 'WirePlumber runtime'
-check_command wpctl 'WirePlumber diagnostics'
 check_command dbus-send 'D-Bus diagnostics'
 check_command gdbus 'D-Bus diagnostics'
 check_command busctl 'D-Bus diagnostics'
@@ -48,20 +43,11 @@ else
     missing=1
 fi
 
-if pkg-config --exists libpipewire-0.3; then
-    printf '%-18s %s\n' 'libpipewire-0.3' "found ($(pkg-config --modversion libpipewire-0.3))"
-else
-    printf '%-18s %s\n' 'libpipewire-0.3' 'MISSING (PipeWire development files)' >&2
-    missing=1
-fi
-
 printf '\nDetected versions:\n'
 rustc --version 2>/dev/null || true
 cargo --version 2>/dev/null || true
 gnome-shell --version 2>/dev/null || true
 gjs --version 2>/dev/null || true
-pipewire --version 2>/dev/null || true
-wireplumber --version 2>/dev/null || true
 systemctl --version 2>/dev/null | head -n 1 || true
 
 if systemctl --user is-system-running >/dev/null 2>&1; then

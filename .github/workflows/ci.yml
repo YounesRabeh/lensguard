@@ -33,9 +33,8 @@ jobs:
             gjs \
             gnome-shell \
             jq \
-            libclang-dev \
             libglib2.0-bin \
-            libpipewire-0.3-dev \
+            clang \
             make \
             pkg-config \
             ripgrep \

@@ -38,11 +38,16 @@ class FakeProxy {
         this.properties = {
             Active: true,
             ActiveSessionCount: 1,
-            BackendAvailable: true,
+            ObserverAvailable: true,
+            ObserverAvailability: 'available',
+            ObserverStatusDetail: '',
+            UnknownCameraActivity: false,
+            SuppressedBrokerEvents: 0n,
+            SuppressedUnknownEvents: 0n,
         };
         this.sessions = [[
             'initial', '', 'Initial app', 'camera', 'Initial camera',
-            'pipewire', 1n, 7,
+            1n, 7,
         ]];
         this.callCount = 0;
         this.disconnectCount = 0;
@@ -64,10 +69,15 @@ class FakeProxy {
 
     get_cached_property(name) {
         const value = this.properties[name];
-        if (name === 'Active' || name === 'BackendAvailable')
+        if (name === 'Active' || name === 'ObserverAvailable' ||
+            name === 'UnknownCameraActivity')
             return GLib.Variant.new_boolean(value);
         if (name === 'ActiveSessionCount')
             return GLib.Variant.new_uint32(value);
+        if (name === 'ObserverAvailability' || name === 'ObserverStatusDetail')
+            return GLib.Variant.new_string(value);
+        if (name === 'SuppressedBrokerEvents' || name === 'SuppressedUnknownEvents')
+            return GLib.Variant.new_uint64(value);
         return null;
     }
 
@@ -75,7 +85,7 @@ class FakeProxy {
         assertEqual(methodName, 'GetActiveSessions', 'client calls contract method');
         assert(!cancellable.is_cancelled(), 'active refresh is not cancelled');
         this.callCount++;
-        return new GLib.Variant('(a(sssssstu))', [this.sessions]);
+        return new GLib.Variant('(a(ssssstu))', [this.sessions]);
     }
 
     emitStateSignal() {

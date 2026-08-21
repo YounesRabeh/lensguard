@@ -116,7 +116,7 @@ export async function run() {
         await openLensGuardMenu();
         await captureScreenshot(`${outputDir}/step10-active-sessions.png`);
 
-        service.setBackendAvailable(false);
+        service.setObserverAvailable(false);
         await waitFor(() =>
             indicator()._toggle.subtitle === 'Camera monitoring unavailable',
         'backend screenshot state did not render');

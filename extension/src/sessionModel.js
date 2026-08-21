@@ -3,7 +3,8 @@
 export const ViewStatus = Object.freeze({
     ACTIVE: 'active',
     INACTIVE: 'inactive',
-    BACKEND_UNAVAILABLE: 'backend-unavailable',
+    OBSERVER_UNAVAILABLE: 'observer-unavailable',
+    UNKNOWN_ACTIVITY: 'unknown-activity',
     SERVICE_UNAVAILABLE: 'service-unavailable',
     INSTALLATION_CONFLICT: 'installation-conflict',
 });
@@ -90,11 +91,11 @@ export function applyInstallationConflictToViewState(state, conflict) {
     return {
         status: ViewStatus.INSTALLATION_CONFLICT,
         serviceAvailable: false,
-        backendAvailable: false,
+        observerAvailable: false,
         cameraActive: false,
         panelIconVisible: true,
         panelIconName: 'dialog-warning-symbolic',
-        backendWarningVisible: true,
+        observerWarningVisible: true,
         title: 'Lens Guard conflict',
         subtitle: 'Multiple extension copies installed',
         accessibleLabel: 'Lens Guard has conflicting extension installations',
@@ -109,11 +110,11 @@ export function createViewState(snapshot = {}) {
         return {
             status: ViewStatus.SERVICE_UNAVAILABLE,
             serviceAvailable: false,
-            backendAvailable: false,
+            observerAvailable: false,
             cameraActive: false,
             panelIconVisible: true,
             panelIconName: 'dialog-warning-symbolic',
-            backendWarningVisible: true,
+            observerWarningVisible: true,
             title: 'LensGuard',
             subtitle: 'Camera monitor service unavailable',
             accessibleLabel: 'LensGuard camera monitor service is unavailable',
@@ -122,25 +123,49 @@ export function createViewState(snapshot = {}) {
         };
     }
 
-    const backendAvailable = snapshot.backendAvailable === true;
-    const sessions = backendAvailable
+    const observerAvailable = snapshot.observerAvailable === true;
+    const sessions = observerAvailable
         ? normalizeSessions(snapshot.sessions)
         : [];
-    const cameraActive = backendAvailable && sessions.length > 0;
+    const cameraActive = observerAvailable && sessions.length > 0;
+    const unknownCameraActivity = observerAvailable &&
+        snapshot.unknownCameraActivity === true;
 
-    if (!backendAvailable) {
+    if (!observerAvailable) {
         return {
-            status: ViewStatus.BACKEND_UNAVAILABLE,
+            status: ViewStatus.OBSERVER_UNAVAILABLE,
             serviceAvailable: true,
-            backendAvailable: false,
+            observerAvailable: false,
             cameraActive: false,
             panelIconVisible: true,
             panelIconName: 'dialog-warning-symbolic',
             title: 'LensGuard',
-            subtitle: 'Camera monitoring unavailable',
+            subtitle: 'Direct V4L2 monitoring unavailable',
             accessibleLabel: 'LensGuard camera monitoring is unavailable',
             tooltip: 'LensGuard: camera monitoring unavailable',
-            backendWarningVisible: true,
+            observerWarningVisible: true,
+            observerAvailability: snapshot.observerAvailability ??
+                'connection-failed',
+            observerStatusDetail: snapshot.observerStatusDetail ?? '',
+            unknownCameraActivity: false,
+            sessions,
+        };
+    }
+
+    if (!cameraActive && unknownCameraActivity) {
+        return {
+            status: ViewStatus.UNKNOWN_ACTIVITY,
+            serviceAvailable: true,
+            observerAvailable: true,
+            cameraActive: false,
+            panelIconVisible: true,
+            panelIconName: 'dialog-warning-symbolic',
+            title: 'LensGuard',
+            subtitle: 'Unknown camera activity',
+            accessibleLabel: 'LensGuard: unknown camera activity',
+            tooltip: 'LensGuard: unknown camera activity',
+            observerWarningVisible: false,
+            unknownCameraActivity: true,
             sessions,
         };
     }
@@ -149,10 +174,12 @@ export function createViewState(snapshot = {}) {
         return {
             status: ViewStatus.INACTIVE,
             serviceAvailable: true,
-            backendAvailable: true,
+            observerAvailable: true,
             cameraActive: false,
             panelIconVisible: false,
             panelIconName: 'camera-web-symbolic',
+            observerWarningVisible: false,
+            unknownCameraActivity: false,
             title: 'LensGuard',
             subtitle: 'No camera in use',
             accessibleLabel: 'LensGuard: no camera is in use',
@@ -165,10 +192,12 @@ export function createViewState(snapshot = {}) {
     return {
         status: ViewStatus.ACTIVE,
         serviceAvailable: true,
-        backendAvailable: true,
+        observerAvailable: true,
         cameraActive: true,
         panelIconVisible: true,
         panelIconName: 'camera-web-symbolic',
+        observerWarningVisible: false,
+        unknownCameraActivity,
         title: 'Camera in use',
         subtitle: count === 1
             ? '1 active application'

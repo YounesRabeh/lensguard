@@ -3,8 +3,8 @@ use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
 use camera_core::{
-    ApplicationIdentity, CameraDevice, CameraSession, DetectionBackend, DeviceId, MonitorEvent,
-    MonitorState, SessionId,
+    ApplicationIdentity, CameraDevice, CameraSession, CameraSessionState, DeviceId, MonitorEvent,
+    MonitorState, ObserverAvailability, SessionId, SuppressionDiagnostics,
 };
 use camera_dbus::{
     BUS_NAME, DbusService, INTERFACE_NAME, OBJECT_PATH, PING_RESPONSE, SessionDto, VERSION,
@@ -72,8 +72,12 @@ fn session(id: &str) -> CameraSession {
             display_name: String::from("Front Camera"),
             node_name: None,
         },
-        started_at_unix_ms: 99,
-        backend: DetectionBackend::PipeWire,
+        process_start_time_ticks: 10,
+        thread_group_id: 7_200,
+        capture_file_descriptor: 3,
+        started_at_monotonic_ns: 99,
+        last_observed_at_monotonic_ns: 99,
+        state: CameraSessionState::Active,
     }
 }
 
@@ -105,7 +109,7 @@ async fn service_owns_name_and_exposes_initial_contract_then_releases_cleanly() 
     );
     assert!(
         client
-            .get_property::<bool>("BackendAvailable")
+            .get_property::<bool>("ObserverAvailable")
             .await
             .unwrap()
     );
@@ -129,7 +133,7 @@ async fn service_owns_name_and_exposes_initial_contract_then_releases_cleanly() 
         .unwrap();
     assert!(introspection.contains(INTERFACE_NAME));
     assert!(introspection.contains("GetActiveSessions"));
-    assert!(introspection.contains("type=\"a(sssssstu)\""));
+    assert!(introspection.contains("type=\"a(ssssstu)\""));
 
     service.shutdown().await.unwrap();
     drop(client);
@@ -293,7 +297,7 @@ async fn stop_event_updates_properties_and_signals() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn backend_event_updates_property_and_signal() {
+async fn observer_event_updates_property_and_signal() {
     let bus = TestBus::start();
     let service = DbusService::on_connection(bus.connect().await, MonitorState::new())
         .await
@@ -301,20 +305,21 @@ async fn backend_event_updates_property_and_signal() {
     let client_connection = bus.connect().await;
     let client = proxy(&client_connection).await;
     let mut availability = client
-        .receive_signal("BackendAvailabilityChanged")
+        .receive_signal("ObserverStatusChanged")
         .await
         .unwrap();
-    let mut backend_changes = client
-        .receive_property_changed::<bool>("BackendAvailable")
+    let mut observer_changes = client
+        .receive_property_changed::<bool>("ObserverAvailable")
         .await;
-    let initial_backend = timeout(Duration::from_secs(2), backend_changes.next())
+    let initial_observer = timeout(Duration::from_secs(2), observer_changes.next())
         .await
         .unwrap()
         .unwrap();
-    assert!(initial_backend.get().await.unwrap());
+    assert!(initial_observer.get().await.unwrap());
     service
-        .apply_event(MonitorEvent::BackendUnavailable {
-            reason: String::from("test backend stopped"),
+        .apply_event(MonitorEvent::ObserverAvailabilityChanged {
+            availability: ObserverAvailability::BackendLost,
+            detail: String::from("test observer stopped"),
         })
         .await
         .unwrap();
@@ -322,18 +327,57 @@ async fn backend_event_updates_property_and_signal() {
         .await
         .unwrap()
         .unwrap();
-    assert!(!unavailable.body().deserialize::<bool>().unwrap());
-    let backend_change = timeout(Duration::from_secs(2), backend_changes.next())
+    assert_eq!(
+        unavailable.body().deserialize::<String>().unwrap(),
+        "backend-lost"
+    );
+    let observer_change = timeout(Duration::from_secs(2), observer_changes.next())
         .await
         .unwrap()
         .unwrap();
-    assert!(!backend_change.get().await.unwrap());
+    assert!(!observer_change.get().await.unwrap());
     assert!(
         !client
-            .get_property::<bool>("BackendAvailable")
+            .get_property::<bool>("ObserverAvailable")
             .await
             .unwrap()
     );
 
+    service.shutdown().await.unwrap();
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn unknown_suppression_is_diagnostic_only() {
+    let bus = TestBus::start();
+    let service = DbusService::on_connection(bus.connect().await, MonitorState::new())
+        .await
+        .unwrap();
+    let client_connection = bus.connect().await;
+    let client = proxy(&client_connection).await;
+    service
+        .apply_event(MonitorEvent::SuppressionDiagnosticsChanged(
+            SuppressionDiagnostics {
+                suppressed_broker_events: 3,
+                suppressed_unknown_events: 1,
+            },
+        ))
+        .await
+        .unwrap();
+    assert!(
+        client
+            .get_property::<bool>("UnknownCameraActivity")
+            .await
+            .unwrap()
+    );
+    assert!(!client.get_property::<bool>("Active").await.unwrap());
+    assert_eq!(
+        client
+            .get_property::<u64>("SuppressedBrokerEvents")
+            .await
+            .unwrap(),
+        3
+    );
+    let sessions: Vec<SessionDto> = client.call("GetActiveSessions", &()).await.unwrap();
+    assert!(sessions.is_empty());
     service.shutdown().await.unwrap();
 }

@@ -26,6 +26,7 @@ Target packages: Ubuntu 26.04, Fedora 44, Arch Linux; GNOME Shell 50; x86_64
 - [ ] Standalone extension ZIP installs in the isolated GNOME smoke environment.
 - [ ] Fresh per-user install and cold D-Bus activation pass.
 - [ ] Every native package installs, cold-activates over D-Bus, and uninstalls cleanly.
+- [ ] Observer service, capabilities, socket authentication, and broker-policy modes are correct.
 - [ ] Upgrade from the previous stable package preserves preferences.
 - [ ] Daemon and extension restart successfully after upgrade.
 - [ ] Clean uninstall removes owned files and preserves unrelated files.
@@ -33,9 +34,13 @@ Target packages: Ubuntu 26.04, Fedora 44, Arch Linux; GNOME Shell 50; x86_64
 ## Manual release smoke
 
 - [ ] Representative Fedora/GNOME session tested.
-- [ ] Camera start produces the active indicator and application row.
+- [ ] Successful direct V4L2 stream-on produces exactly one indicator and application row.
 - [ ] Camera stop clears the final session and indicator.
-- [ ] Known direct-V4L2 limitation remains documented.
+- [ ] Open/query and failed stream-on produce no session.
+- [ ] Trusted broker capture produces no LensGuard session or application row.
+- [ ] Unknown ownership shows only the non-identifying diagnostic.
+- [ ] Observer loss interrupts sessions and reports unavailability.
+- [ ] V4L2 read-I/O and other remaining limitations are documented.
 
 ## Approval
 

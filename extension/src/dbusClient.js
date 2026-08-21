@@ -14,12 +14,17 @@ const STATE_SIGNALS = new Set([
     'StateChanged',
     'SessionStarted',
     'SessionStopped',
-    'BackendAvailabilityChanged',
+    'ObserverStatusChanged',
 ]);
 const STATE_PROPERTIES = new Set([
     'Active',
     'ActiveSessionCount',
-    'BackendAvailable',
+    'ObserverAvailable',
+    'ObserverAvailability',
+    'ObserverStatusDetail',
+    'UnknownCameraActivity',
+    'SuppressedBrokerEvents',
+    'SuppressedUnknownEvents',
 ]);
 
 function defaultWatchName(onAppeared, onVanished) {
@@ -158,7 +163,8 @@ export class DbusClient {
         const cancellable = this._cancellable;
         this._publish(createViewState({
             serviceAvailable: true,
-            backendAvailable: false,
+            observerAvailable: false,
+            observerAvailability: 'connection-failed',
             sessions: [],
         }));
 
@@ -257,7 +263,8 @@ export class DbusClient {
             this._onError(error);
             this._publish(createViewState({
                 serviceAvailable: true,
-                backendAvailable: false,
+                observerAvailable: false,
+                observerAvailability: 'connection-failed',
                 sessions: [],
             }));
         } finally {
@@ -275,15 +282,26 @@ export class DbusClient {
             active: readCachedProperty(proxy, 'Active', 'b', false),
             activeSessionCount: readCachedProperty(
                 proxy, 'ActiveSessionCount', 'u', 0),
-            backendAvailable: readCachedProperty(
-                proxy, 'BackendAvailable', 'b', false),
+            observerAvailable: readCachedProperty(
+                proxy, 'ObserverAvailable', 'b', false),
+            observerAvailability: readCachedProperty(
+                proxy, 'ObserverAvailability', 's', 'connection-failed'),
+            observerStatusDetail: readCachedProperty(
+                proxy, 'ObserverStatusDetail', 's', ''),
+            unknownCameraActivity: readCachedProperty(
+                proxy, 'UnknownCameraActivity', 'b', false),
+            suppressedBrokerEvents: readCachedProperty(
+                proxy, 'SuppressedBrokerEvents', 't', 0n),
+            suppressedUnknownEvents: readCachedProperty(
+                proxy, 'SuppressedUnknownEvents', 't', 0n),
         };
     }
 
     _publishUnavailable() {
         this._publish(createViewState({
             serviceAvailable: false,
-            backendAvailable: false,
+            observerAvailable: false,
+            observerAvailability: 'not-installed',
             sessions: [],
         }));
     }

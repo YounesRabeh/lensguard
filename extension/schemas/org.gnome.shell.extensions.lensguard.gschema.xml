@@ -9,14 +9,14 @@
         Show LensGuard's status icon in the GNOME top bar while retaining its Quick Settings menu.
       </description>
     </key>
-    <key name="show-backend-unavailable-warning" type="b">
+    <key name="show-observer-unavailable-warning" type="b">
       <default>true</default>
       <summary>Show camera monitoring warnings</summary>
       <description>
-        Use warning language and a warning icon when the camera monitoring backend is unavailable.
+        Use warning language and an icon when the V4L2 observer is unavailable.
       </description>
     </key>
-    <key name="show-indicator-during-backend-failure" type="b">
+    <key name="show-indicator-during-observer-failure" type="b">
       <default>true</default>
       <summary>Keep the status icon visible during monitoring failures</summary>
       <description>

@@ -1,10 +1,10 @@
-use camera_core::{CameraSession, DetectionBackend, MonitorSnapshot};
+use camera_core::{CameraSession, MonitorSnapshot};
 use serde::{Deserialize, Serialize};
 use zbus::zvariant::Type;
 
 /// Stable D-Bus representation of one active camera relationship.
 ///
-/// The field order is part of the public wire contract and has signature `(sssssstu)`.
+/// The field order is part of the public wire contract and has signature `(ssssstu)`.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Type)]
 #[zvariant(crate = "zbus::zvariant")]
 pub struct SessionDto {
@@ -13,8 +13,7 @@ pub struct SessionDto {
     pub application_name: String,
     pub device_id: String,
     pub device_name: String,
-    pub backend: String,
-    pub started_at_unix_ms: u64,
+    pub started_at_monotonic_ns: u64,
     pub process_id: u32,
 }
 
@@ -26,11 +25,7 @@ impl From<&CameraSession> for SessionDto {
             application_name: session.application.display_name.clone(),
             device_id: session.device.id.as_str().to_owned(),
             device_name: session.device.display_name.clone(),
-            backend: match &session.backend {
-                DetectionBackend::PipeWire => String::from("pipewire"),
-                DetectionBackend::Other(name) => name.clone(),
-            },
-            started_at_unix_ms: session.started_at_unix_ms,
+            started_at_monotonic_ns: session.started_at_monotonic_ns,
             process_id: session.application.pid.unwrap_or(0),
         }
     }
@@ -49,7 +44,7 @@ pub(crate) fn snapshot_sessions(snapshot: &MonitorSnapshot) -> Vec<SessionDto> {
 #[cfg(test)]
 mod tests {
     use camera_core::{
-        ApplicationIdentity, CameraDevice, CameraSession, DetectionBackend, DeviceId, SessionId,
+        ApplicationIdentity, CameraDevice, CameraSession, CameraSessionState, DeviceId, SessionId,
     };
     use zbus::zvariant::Type;
 
@@ -70,19 +65,22 @@ mod tests {
                 display_name: String::from("Front Camera"),
                 node_name: Some(String::from("raw-node-name-is-not-exported")),
             },
-            started_at_unix_ms: 1_234,
-            backend: DetectionBackend::PipeWire,
+            process_start_time_ticks: 10,
+            thread_group_id: 4_200,
+            capture_file_descriptor: 3,
+            started_at_monotonic_ns: 1_234,
+            last_observed_at_monotonic_ns: 1_234,
+            state: CameraSessionState::Active,
         };
 
         let dto = SessionDto::from(&session);
-        assert_eq!(SessionDto::SIGNATURE, "(sssssstu)");
+        assert_eq!(SessionDto::SIGNATURE, "(ssssstu)");
         assert_eq!(dto.session_id, "stable-session");
         assert_eq!(dto.application_id, "org.example.Camera");
         assert_eq!(dto.application_name, "Example Camera");
         assert_eq!(dto.device_id, "stable-device");
         assert_eq!(dto.device_name, "Front Camera");
-        assert_eq!(dto.backend, "pipewire");
-        assert_eq!(dto.started_at_unix_ms, 1_234);
+        assert_eq!(dto.started_at_monotonic_ns, 1_234);
         assert_eq!(dto.process_id, 4_200);
     }
 
@@ -101,13 +99,16 @@ mod tests {
                 display_name: String::from("Camera"),
                 node_name: None,
             },
-            started_at_unix_ms: 0,
-            backend: DetectionBackend::Other(String::from("future-backend")),
+            process_start_time_ticks: 1,
+            thread_group_id: 1,
+            capture_file_descriptor: 0,
+            started_at_monotonic_ns: 0,
+            last_observed_at_monotonic_ns: 0,
+            state: CameraSessionState::Active,
         };
 
         let dto = SessionDto::from(&session);
         assert!(dto.application_id.is_empty());
         assert_eq!(dto.process_id, 0);
-        assert_eq!(dto.backend, "future-backend");
     }
 }

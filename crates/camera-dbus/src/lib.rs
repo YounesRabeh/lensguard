@@ -1,7 +1,7 @@
 //! Stable user-session D-Bus adapter for `LensGuard`.
 //!
 //! Transport DTOs are deliberately separate from `camera-core` domain entities. The public
-//! contract exposes stable relationship and device identifiers, but no raw `PipeWire` object IDs.
+//! contract exposes stable relationship and device identifiers, but no privileged observer data.
 
 mod dto;
 mod error;

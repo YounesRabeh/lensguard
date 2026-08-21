@@ -13,28 +13,33 @@ const INTERFACE_XML = `
 <node>
   <interface name="${INTERFACE_NAME}">
     <method name="GetActiveSessions">
-      <arg name="sessions" type="a(sssssstu)" direction="out"/>
+      <arg name="sessions" type="a(ssssstu)" direction="out"/>
     </method>
     <method name="Ping">
       <arg name="response" type="s" direction="out"/>
     </method>
     <property name="Active" type="b" access="read"/>
     <property name="ActiveSessionCount" type="u" access="read"/>
-    <property name="BackendAvailable" type="b" access="read"/>
+    <property name="ObserverAvailable" type="b" access="read"/>
+    <property name="ObserverAvailability" type="s" access="read"/>
+    <property name="ObserverStatusDetail" type="s" access="read"/>
+    <property name="UnknownCameraActivity" type="b" access="read"/>
+    <property name="SuppressedBrokerEvents" type="t" access="read"/>
+    <property name="SuppressedUnknownEvents" type="t" access="read"/>
     <property name="Version" type="s" access="read"/>
     <signal name="StateChanged">
       <arg name="active" type="b"/>
       <arg name="active_session_count" type="u"/>
-      <arg name="backend_available" type="b"/>
+      <arg name="observer_available" type="b"/>
     </signal>
     <signal name="SessionStarted">
-      <arg name="session" type="(sssssstu)"/>
+      <arg name="session" type="(ssssstu)"/>
     </signal>
     <signal name="SessionStopped">
       <arg name="session_id" type="s"/>
     </signal>
-    <signal name="BackendAvailabilityChanged">
-      <arg name="available" type="b"/>
+    <signal name="ObserverStatusChanged">
+      <arg name="availability" type="s"/>
     </signal>
   </interface>
 </node>`;
@@ -45,7 +50,7 @@ export function createSessionTuple({
     applicationName,
     deviceId = 'camera',
     deviceName,
-    startedAtUnixMs = 1n,
+    startedAtMonotonicNs = 1n,
     processId = 0,
 }) {
     return [
@@ -54,8 +59,7 @@ export function createSessionTuple({
         applicationName,
         deviceId,
         deviceName,
-        'pipewire',
-        startedAtUnixMs,
+        startedAtMonotonicNs,
         processId,
     ];
 }
@@ -63,7 +67,9 @@ export function createSessionTuple({
 export class FakeCameraService {
     constructor() {
         this.sessions = [];
-        this.backendAvailable = true;
+        this.observerAvailable = true;
+        this.observerAvailability = 'available';
+        this.unknownCameraActivity = false;
         this.getActiveSessionsCalls = 0;
         this._ownerId = 0;
         this._exportedObject = null;
@@ -78,8 +84,28 @@ export class FakeCameraService {
         return this.sessions.length;
     }
 
-    get BackendAvailable() {
-        return this.backendAvailable;
+    get ObserverAvailable() {
+        return this.observerAvailable;
+    }
+
+    get ObserverAvailability() {
+        return this.observerAvailability;
+    }
+
+    get ObserverStatusDetail() {
+        return '';
+    }
+
+    get UnknownCameraActivity() {
+        return this.unknownCameraActivity;
+    }
+
+    get SuppressedBrokerEvents() {
+        return 0n;
+    }
+
+    get SuppressedUnknownEvents() {
+        return this.unknownCameraActivity ? 1n : 0n;
     }
 
     get Version() {
@@ -100,7 +126,8 @@ export class FakeCameraService {
             throw new Error('fake camera service is already running');
 
         this.sessions = initialSessions.map(tuple => [...tuple]);
-        this.backendAvailable = true;
+        this.observerAvailable = true;
+        this.observerAvailability = 'available';
         this._stopping = false;
 
         return new Promise((resolve, reject) => {
@@ -146,7 +173,7 @@ export class FakeCameraService {
         this._emitPropertyChanges(previous);
         this._exportedObject.emit_signal(
             'SessionStarted',
-            new GLib.Variant('((sssssstu))', [tuple]));
+            new GLib.Variant('((ssssstu))', [tuple]));
         this.emitStateChanged();
     }
 
@@ -160,15 +187,16 @@ export class FakeCameraService {
         this.emitStateChanged();
     }
 
-    setBackendAvailable(available) {
+    setObserverAvailable(available) {
         const previous = this._propertySnapshot();
-        this.backendAvailable = available;
+        this.observerAvailable = available;
+        this.observerAvailability = available ? 'available' : 'backend-lost';
         if (!available)
             this.sessions = [];
         this._emitPropertyChanges(previous);
         this._exportedObject.emit_signal(
-            'BackendAvailabilityChanged',
-            new GLib.Variant('(b)', [available]));
+            'ObserverStatusChanged',
+            new GLib.Variant('(s)', [this.observerAvailability]));
         this.emitStateChanged();
     }
 
@@ -178,7 +206,7 @@ export class FakeCameraService {
             new GLib.Variant('(bub)', [
                 this.Active,
                 this.ActiveSessionCount,
-                this.BackendAvailable,
+                this.ObserverAvailable,
             ]));
     }
 
@@ -186,7 +214,7 @@ export class FakeCameraService {
         return {
             active: this.Active,
             activeSessionCount: this.ActiveSessionCount,
-            backendAvailable: this.BackendAvailable,
+            observerAvailable: this.ObserverAvailable,
         };
     }
 
@@ -200,10 +228,13 @@ export class FakeCameraService {
                 'ActiveSessionCount',
                 GLib.Variant.new_uint32(this.ActiveSessionCount));
         }
-        if (previous.backendAvailable !== this.BackendAvailable) {
+        if (previous.observerAvailable !== this.ObserverAvailable) {
             this._exportedObject.emit_property_changed(
-                'BackendAvailable',
-                GLib.Variant.new_boolean(this.BackendAvailable));
+                'ObserverAvailable',
+                GLib.Variant.new_boolean(this.ObserverAvailable));
+            this._exportedObject.emit_property_changed(
+                'ObserverAvailability',
+                GLib.Variant.new_string(this.ObserverAvailability));
         }
     }
 }

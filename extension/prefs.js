@@ -22,7 +22,7 @@ export default class LensGuardPreferences extends ExtensionPreferences {
         const warningRow = new Adw.SwitchRow({
             title: 'Show monitoring warnings',
             subtitle: 'Use warning language and a warning icon when the ' +
-                'camera backend is unavailable.',
+                'privileged V4L2 observer is unavailable.',
         });
         const indicatorRow = new Adw.SwitchRow({
             title: 'Keep the status icon visible',
@@ -53,12 +53,12 @@ export default class LensGuardPreferences extends ExtensionPreferences {
             'active',
             Gio.SettingsBindFlags.DEFAULT);
         window._settings.bind(
-            PreferenceKey.SHOW_BACKEND_UNAVAILABLE_WARNING,
+            PreferenceKey.SHOW_OBSERVER_UNAVAILABLE_WARNING,
             warningRow,
             'active',
             Gio.SettingsBindFlags.DEFAULT);
         window._settings.bind(
-            PreferenceKey.SHOW_INDICATOR_DURING_BACKEND_FAILURE,
+            PreferenceKey.SHOW_INDICATOR_DURING_OBSERVER_FAILURE,
             indicatorRow,
             'active',
             Gio.SettingsBindFlags.DEFAULT);

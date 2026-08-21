@@ -9,7 +9,7 @@ or a development preview.
 
 - Fedora:
 - GNOME Shell:
-- PipeWire:
+- Direct V4L2 observer:
 - Architecture:
 
 ## Installation

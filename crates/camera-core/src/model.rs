@@ -4,8 +4,8 @@ use crate::{DomainError, IdentifierKind};
 
 /// Stable, backend-independent identity for a camera session.
 ///
-/// Raw `PipeWire` object identifiers must never be exposed directly as this value. An adapter is
-/// responsible for deriving an identity that remains stable for the lifetime of a relationship.
+/// Observer-native identifiers must never be exposed directly as this value. An adapter derives
+/// an identity stable for the lifetime of a confirmed capture.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct SessionId(String);
 
@@ -132,13 +132,13 @@ pub struct ApplicationIdentity {
     pub binary: Option<String>,
 }
 
-/// The adapter family that detected a camera session.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DetectionBackend {
-    /// A session inferred from the `PipeWire` graph.
-    PipeWire,
-    /// A future backend not known to this crate version.
-    Other(String),
+/// Lifecycle state of a confirmed direct capture session.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CameraSessionState {
+    Active,
+    Stopped,
+    Interrupted,
+    Unknown,
 }
 
 /// One active relationship between an application and a camera device.
@@ -150,8 +150,12 @@ pub struct CameraSession {
     pub id: SessionId,
     pub application: ApplicationIdentity,
     pub device: CameraDevice,
-    pub started_at_unix_ms: u64,
-    pub backend: DetectionBackend,
+    pub process_start_time_ticks: u64,
+    pub thread_group_id: u32,
+    pub capture_file_descriptor: i32,
+    pub started_at_monotonic_ns: u64,
+    pub last_observed_at_monotonic_ns: u64,
+    pub state: CameraSessionState,
 }
 
 #[cfg(test)]

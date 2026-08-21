@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::{CameraSession, MonitorEvent, SessionId};
+use crate::{CameraSession, MonitorEvent, ObserverAvailability, SessionId, SuppressionDiagnostics};
 
 /// A deterministic, transport-independent snapshot of monitor state.
 ///
@@ -9,8 +9,9 @@ use crate::{CameraSession, MonitorEvent, SessionId};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MonitorSnapshot {
     pub active_sessions: Vec<CameraSession>,
-    pub backend_available: bool,
-    pub backend_unavailable_reason: Option<String>,
+    pub observer_availability: ObserverAvailability,
+    pub observer_status_detail: String,
+    pub suppression_diagnostics: SuppressionDiagnostics,
 }
 
 impl MonitorSnapshot {
@@ -39,16 +40,18 @@ impl MonitorSnapshot {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MonitorState {
     active_sessions: BTreeMap<SessionId, CameraSession>,
-    backend_available: bool,
-    backend_unavailable_reason: Option<String>,
+    observer_availability: ObserverAvailability,
+    observer_status_detail: String,
+    suppression_diagnostics: SuppressionDiagnostics,
 }
 
 impl Default for MonitorState {
     fn default() -> Self {
         Self {
             active_sessions: BTreeMap::new(),
-            backend_available: true,
-            backend_unavailable_reason: None,
+            observer_availability: ObserverAvailability::Available,
+            observer_status_detail: String::new(),
+            suppression_diagnostics: SuppressionDiagnostics::default(),
         }
     }
 }
@@ -71,17 +74,19 @@ impl MonitorState {
             MonitorEvent::SessionStopped(session_id) => {
                 self.active_sessions.remove(&session_id).is_some()
             }
-            MonitorEvent::BackendUnavailable { reason } => {
-                let changed = self.backend_available
-                    || self.backend_unavailable_reason.as_deref() != Some(reason.as_str());
-                self.backend_available = false;
-                self.backend_unavailable_reason = Some(reason);
+            MonitorEvent::ObserverAvailabilityChanged {
+                availability,
+                detail,
+            } => {
+                let changed = self.observer_availability != availability
+                    || self.observer_status_detail != detail;
+                self.observer_availability = availability;
+                self.observer_status_detail = detail;
                 changed
             }
-            MonitorEvent::BackendRecovered => {
-                let changed = !self.backend_available || self.backend_unavailable_reason.is_some();
-                self.backend_available = true;
-                self.backend_unavailable_reason = None;
+            MonitorEvent::SuppressionDiagnosticsChanged(diagnostics) => {
+                let changed = self.suppression_diagnostics != diagnostics;
+                self.suppression_diagnostics = diagnostics;
                 changed
             }
         }
@@ -107,14 +112,24 @@ impl MonitorState {
 
     /// Returns whether the monitoring backend is currently available.
     #[must_use]
-    pub fn backend_available(&self) -> bool {
-        self.backend_available
+    pub fn observer_available(&self) -> bool {
+        self.observer_availability.is_available()
     }
 
-    /// Returns the most recent backend-unavailable reason, when present.
+    /// Returns the current observer availability category.
     #[must_use]
-    pub fn backend_unavailable_reason(&self) -> Option<&str> {
-        self.backend_unavailable_reason.as_deref()
+    pub fn observer_availability(&self) -> ObserverAvailability {
+        self.observer_availability
+    }
+
+    #[must_use]
+    pub fn observer_status_detail(&self) -> &str {
+        &self.observer_status_detail
+    }
+
+    #[must_use]
+    pub fn suppression_diagnostics(&self) -> SuppressionDiagnostics {
+        self.suppression_diagnostics
     }
 
     /// Returns a cloned public snapshot ordered by session identifier.
@@ -122,8 +137,9 @@ impl MonitorState {
     pub fn snapshot(&self) -> MonitorSnapshot {
         MonitorSnapshot {
             active_sessions: self.active_sessions.values().cloned().collect(),
-            backend_available: self.backend_available,
-            backend_unavailable_reason: self.backend_unavailable_reason.clone(),
+            observer_availability: self.observer_availability,
+            observer_status_detail: self.observer_status_detail.clone(),
+            suppression_diagnostics: self.suppression_diagnostics,
         }
     }
 
@@ -154,8 +170,8 @@ impl MonitorState {
 mod tests {
     use super::MonitorState;
     use crate::{
-        ApplicationIdentity, CameraDevice, CameraSession, DetectionBackend, DeviceId, MonitorEvent,
-        SessionId,
+        ApplicationIdentity, CameraDevice, CameraSession, CameraSessionState, DeviceId,
+        MonitorEvent, ObserverAvailability, SessionId, SuppressionDiagnostics,
     };
 
     fn session(id: &str, app_name: &str, device_name: &str) -> CameraSession {
@@ -172,8 +188,12 @@ mod tests {
                 display_name: device_name.to_owned(),
                 node_name: None,
             },
-            started_at_unix_ms: 1_000,
-            backend: DetectionBackend::PipeWire,
+            process_start_time_ticks: 10,
+            thread_group_id: 42,
+            capture_file_descriptor: 3,
+            started_at_monotonic_ns: 1_000,
+            last_observed_at_monotonic_ns: 1_000,
+            state: CameraSessionState::Active,
         }
     }
 
@@ -319,8 +339,9 @@ mod tests {
         let events = [
             MonitorEvent::SessionStarted(session("one", "Unknown", "Camera")),
             MonitorEvent::SessionUpdated(session("one", "Resolved", "Camera")),
-            MonitorEvent::BackendUnavailable {
-                reason: String::from("backend restarting"),
+            MonitorEvent::ObserverAvailabilityChanged {
+                availability: ObserverAvailability::BackendLost,
+                detail: String::from("observer restarting"),
             },
         ];
         let mut state = MonitorState::new();
@@ -351,21 +372,26 @@ mod tests {
     }
 
     #[test]
-    fn backend_availability_events_are_idempotent() {
+    fn observer_availability_events_are_idempotent() {
         let mut state = MonitorState::new();
-        let unavailable = MonitorEvent::BackendUnavailable {
-            reason: String::from("connection lost"),
+        let unavailable = MonitorEvent::ObserverAvailabilityChanged {
+            availability: ObserverAvailability::BackendLost,
+            detail: String::from("connection lost"),
         };
 
         assert!(state.apply(unavailable.clone()));
         assert!(!state.apply(unavailable));
-        assert!(!state.backend_available());
-        assert_eq!(state.backend_unavailable_reason(), Some("connection lost"));
+        assert!(!state.observer_available());
+        assert_eq!(state.observer_status_detail(), "connection lost");
 
-        assert!(state.apply(MonitorEvent::BackendRecovered));
-        assert!(!state.apply(MonitorEvent::BackendRecovered));
-        assert!(state.backend_available());
-        assert_eq!(state.backend_unavailable_reason(), None);
+        let recovered = MonitorEvent::ObserverAvailabilityChanged {
+            availability: ObserverAvailability::Available,
+            detail: String::new(),
+        };
+        assert!(state.apply(recovered.clone()));
+        assert!(!state.apply(recovered));
+        assert!(state.observer_available());
+        assert_eq!(state.observer_status_detail(), "");
     }
 
     #[test]
@@ -381,5 +407,18 @@ mod tests {
         let active = state.snapshot();
         assert!(active.active());
         assert_eq!(active.active_session_count(), 1);
+    }
+
+    #[test]
+    fn suppression_diagnostics_are_non_session_state() {
+        let mut state = MonitorState::new();
+        let diagnostics = SuppressionDiagnostics {
+            suppressed_broker_events: 2,
+            suppressed_unknown_events: 1,
+        };
+        assert!(state.apply(MonitorEvent::SuppressionDiagnosticsChanged(diagnostics)));
+        assert_eq!(state.suppression_diagnostics(), diagnostics);
+        assert!(!state.active());
+        assert_eq!(state.active_session_count(), 0);
     }
 }

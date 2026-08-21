@@ -21,23 +21,23 @@ function assertEqual(actual, expected, message) {
         throw new Error(`${message}: expected ${expected}, got ${actual}`);
 }
 
-const backendFailure = createViewState({
+const observerFailure = createViewState({
     serviceAvailable: true,
-    backendAvailable: false,
+    observerAvailable: false,
     sessions: [],
 });
 
-const defaults = applyPreferencesToViewState(backendFailure);
-assert(defaults.backendWarningVisible, 'warnings default to enabled');
+const defaults = applyPreferencesToViewState(observerFailure);
+assert(defaults.observerWarningVisible, 'warnings default to enabled');
 assert(defaults.panelIconVisible, 'failure indicator defaults to visible');
 assertEqual(defaults.panelIconName, 'dialog-warning-symbolic',
     'default failure icon is a warning');
 
-const quietFailure = applyPreferencesToViewState(backendFailure, {
-    showBackendUnavailableWarning: false,
-    showIndicatorDuringBackendFailure: true,
+const quietFailure = applyPreferencesToViewState(observerFailure, {
+    showObserverUnavailableWarning: false,
+    showIndicatorDuringObserverFailure: true,
 });
-assert(!quietFailure.backendWarningVisible,
+assert(!quietFailure.observerWarningVisible,
     'warning preference disables warning presentation');
 assert(quietFailure.panelIconVisible,
     'warning language and panel visibility are independent');
@@ -46,29 +46,29 @@ assertEqual(quietFailure.panelIconName, 'dialog-information-symbolic',
 assert(!quietFailure.subtitle.toLowerCase().includes('safe'),
     'failure state does not make a misleading safety claim');
 
-const hiddenFailure = applyPreferencesToViewState(backendFailure, {
-    showBackendUnavailableWarning: true,
-    showIndicatorDuringBackendFailure: false,
+const hiddenFailure = applyPreferencesToViewState(observerFailure, {
+    showObserverUnavailableWarning: true,
+    showIndicatorDuringObserverFailure: false,
 });
 assert(!hiddenFailure.panelIconVisible,
     'indicator preference hides the backend-failure panel icon');
-assert(hiddenFailure.backendWarningVisible,
+assert(hiddenFailure.observerWarningVisible,
     'hiding the panel icon does not erase the menu warning');
 
 const serviceFailure = createViewState({serviceAvailable: false});
 const quietServiceFailure = applyPreferencesToViewState(serviceFailure, {
-    showBackendUnavailableWarning: false,
-    showIndicatorDuringBackendFailure: true,
+    showObserverUnavailableWarning: false,
+    showIndicatorDuringObserverFailure: true,
 });
-assert(!quietServiceFailure.backendWarningVisible,
+assert(!quietServiceFailure.observerWarningVisible,
     'warning preference also applies when the daemon service is absent');
 assertEqual(quietServiceFailure.panelIconName, 'dialog-information-symbolic',
     'service absence uses a neutral icon when warnings are disabled');
 
 const installationConflict = applyInstallationConflictToViewState(
-    createViewState({backendAvailable: true}), true);
+    createViewState({observerAvailable: true}), true);
 const quietConflict = applyPreferencesToViewState(installationConflict, {
-    showBackendUnavailableWarning: false,
+    showObserverUnavailableWarning: false,
 });
 assertEqual(quietConflict.status, 'installation-conflict',
     'monitoring preferences do not hide an installation conflict');
@@ -76,7 +76,7 @@ assertEqual(quietConflict.subtitle, 'Multiple extension copies installed',
     'installation conflict keeps its actionable message');
 
 const active = createViewState({
-    backendAvailable: true,
+    observerAvailable: true,
     sessions: [{
         sessionId: 'camera',
         applicationName: 'Camera',
@@ -91,14 +91,14 @@ assert(!hiddenPanel.panelIconVisible,
 assert(hiddenPanel.cameraActive,
     'hiding the panel icon does not clear camera activity');
 assert(applyPreferencesToViewState(active, {
-    showBackendUnavailableWarning: false,
-    showIndicatorDuringBackendFailure: false,
-}) === active, 'backend preferences do not alter active camera state');
+    showObserverUnavailableWarning: false,
+    showIndicatorDuringObserverFailure: false,
+}) === active, 'observer preferences do not alter active camera state');
 
 const values = new Map([
     [PreferenceKey.SHOW_PANEL_INDICATOR, false],
-    [PreferenceKey.SHOW_BACKEND_UNAVAILABLE_WARNING, false],
-    [PreferenceKey.SHOW_INDICATOR_DURING_BACKEND_FAILURE, true],
+    [PreferenceKey.SHOW_OBSERVER_UNAVAILABLE_WARNING, false],
+    [PreferenceKey.SHOW_INDICATOR_DURING_OBSERVER_FAILURE, true],
 ]);
 const loaded = readPreferences({
     get_boolean(key) {
@@ -107,18 +107,18 @@ const loaded = readPreferences({
 });
 assertEqual(loaded.showPanelIndicator, false,
     'panel indicator preference is read from settings');
-assertEqual(loaded.showBackendUnavailableWarning, false,
+assertEqual(loaded.showObserverUnavailableWarning, false,
     'warning preference is read from settings');
-assertEqual(loaded.showIndicatorDuringBackendFailure, true,
+assertEqual(loaded.showIndicatorDuringObserverFailure, true,
     'indicator preference is read from settings');
 
 const malformed = normalizePreferences({
-    showBackendUnavailableWarning: null,
-    showIndicatorDuringBackendFailure: 0,
+    showObserverUnavailableWarning: null,
+    showIndicatorDuringObserverFailure: 0,
 });
-assert(malformed.showBackendUnavailableWarning,
+assert(malformed.showObserverUnavailableWarning,
     'malformed warning preference falls back safely');
-assert(malformed.showIndicatorDuringBackendFailure,
+assert(malformed.showIndicatorDuringObserverFailure,
     'malformed indicator preference falls back safely');
 
 print('Preference-to-view-model tests passed.');

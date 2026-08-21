@@ -4,11 +4,11 @@ Section: utils
 Priority: optional
 Architecture: @ARCHITECTURE@
 Installed-Size: @INSTALLED_SIZE@
-Depends: dbus, gnome-shell (>= 50), libc6 (>= 2.34), pipewire, systemd
+Depends: dbus, gnome-shell (>= 50), libc6 (>= 2.34), systemd
 Conflicts: lensguard-service
 Replaces: lensguard-service
 Maintainer: Younes Rabeh <younesrabeh@users.noreply.github.com>
 Homepage: https://github.com/younesrabeh/lensguard
 Description: GNOME Shell camera privacy indicator
- LensGuard monitors active camera capture through PipeWire and shows the
- applications using the camera through a GNOME Shell extension.
+ LensGuard monitors confirmed direct V4L2 camera capture and shows the
+ applications using cameras directly through a GNOME Shell extension.

@@ -7,8 +7,8 @@ use tracing::Level;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Command {
     Run,
-    InspectPipeWire,
-    WatchPipeWire,
+    InspectV4l2,
+    WatchV4l2,
     ServeDbus,
     Version,
     Help,
@@ -66,8 +66,8 @@ impl Config {
 
             let parsed = match argument.as_str() {
                 "run" => Command::Run,
-                "inspect-pipewire" => Command::InspectPipeWire,
-                "watch-pipewire" => Command::WatchPipeWire,
+                "inspect-v4l2" => Command::InspectV4l2,
+                "watch-v4l2" => Command::WatchV4l2,
                 "serve-dbus" => Command::ServeDbus,
                 "--version" | "-V" => Command::Version,
                 "--help" | "-h" => Command::Help,
@@ -115,7 +115,7 @@ fn parse_log_level(value: &str) -> Result<Level, ConfigError> {
 }
 
 /// Human-readable command usage.
-pub const USAGE: &str = "Usage: camera-monitor [--log-level LEVEL] [run|inspect-pipewire|watch-pipewire|serve-dbus]\n\
+pub const USAGE: &str = "Usage: camera-monitor [--log-level LEVEL] [run|inspect-v4l2|watch-v4l2|serve-dbus]\n\
        camera-monitor --version\n\
        camera-monitor --help";
 
@@ -136,10 +136,10 @@ mod tests {
     #[test]
     fn parses_commands_and_log_levels_in_either_order() {
         let first = Config::parse_from(["--log-level", "debug", "run"]).unwrap();
-        let second = Config::parse_from(["inspect-pipewire", "--log-level=trace"]).unwrap();
+        let second = Config::parse_from(["inspect-v4l2", "--log-level=trace"]).unwrap();
         assert_eq!(first.command, Command::Run);
         assert_eq!(first.log_level, Level::DEBUG);
-        assert_eq!(second.command, Command::InspectPipeWire);
+        assert_eq!(second.command, Command::InspectV4l2);
         assert_eq!(second.log_level, Level::TRACE);
     }
 

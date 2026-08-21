@@ -52,22 +52,26 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
 
         if (state.status === 'service-unavailable') {
             this._addInformationItem(
-                state.backendWarningVisible
+                state.observerWarningVisible
                     ? 'Install lensguard-service for your distribution.'
                     : 'Camera status is currently unavailable.');
             return;
         }
 
-        if (state.status === 'backend-unavailable') {
+        if (state.status === 'observer-unavailable') {
             this._addInformationItem(
-                state.backendWarningVisible
-                    ? 'Camera use cannot be determined while monitoring is unavailable.'
+                state.observerWarningVisible
+                    ? `V4L2 observer: ${state.observerAvailability}`
                     : 'Camera status is currently unavailable.');
             return;
         }
 
+        if (state.unknownCameraActivity)
+            this._addInformationItem('Unknown camera activity');
+
         if (state.sessions.length === 0) {
-            this._addInformationItem('No applications are using a camera.');
+            if (!state.unknownCameraActivity)
+                this._addInformationItem('No applications are using a camera.');
             return;
         }
 

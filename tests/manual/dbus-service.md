@@ -40,7 +40,7 @@ Logs collected:
   /io/github/younesrabeh/CameraMonitor; press Ctrl+C to stop`.
 - Ping: `('pong',)`.
 - Introspection reported `GetActiveSessions(out a(sssssstu) arg_0)`, `readonly b Active = false`,
-  `readonly u ActiveSessionCount = 0`, `readonly b BackendAvailable = true`, and
+  `readonly u ActiveSessionCount = 0`, `readonly b ObserverAvailable = true`, and
   `readonly s Version = '0.6.0'`.
 
 Pass/fail:
@@ -49,5 +49,5 @@ Pass/fail:
 
 Notes:
 
-- The standalone endpoint is intentionally not connected to PipeWire until Step 7.
+- The standalone endpoint is intentionally not connected to the privileged observer.
 - This test uses metadata only and does not access camera frames.

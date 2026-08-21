@@ -1,52 +1,14 @@
 # Getting started
 
-This guide is for people who want to use Lens Guard, not develop it.
+Install the native `lensguard-service` package, enable
+`lensguard-v4l2-observer.service`, then install one copy of the GNOME extension. Open Quick Settings
+to verify “No camera in use” and no warning icon.
 
-## Install from a release
+Start an application configured for direct V4L2 streaming capture. After successful stream-on,
+LensGuard shows one row with the resolved application and camera. Ending capture removes it.
 
-Choose one installation path:
+An observer warning means coverage is unavailable, not that the camera is safe. “Unknown camera
+activity” means ownership could not be classified and intentionally does not create a normal
+application row. Camera use through a trusted desktop broker is left to GNOME's privacy indicator.
 
-1. **GNOME Extensions + service:** install Lens Guard from extensions.gnome.org (or install the
-   release ZIP), then install the matching `lensguard-service` package for your distribution. If
-   the service is missing, the Lens Guard menu tells you to install it.
-2. **One full package:** install the `lensguard` package for your distribution. It contains both
-   the extension and camera-monitor service.
-
-For example, install either `lensguard-service_*.deb` or `lensguard_*.deb` on Debian/Ubuntu,
-either `lensguard-service-*.rpm` or `lensguard-*.rpm` on Fedora, and either
-`lensguard-service-*.pkg.tar.zst` or `lensguard-*.pkg.tar.zst` on Arch. Do not install both native
-package variants: APT, DNF, and Pacman report their declared package conflict.
-
-Do not combine the Store extension with the full package. Lens Guard reports an installation
-conflict when both a per-user and system copy of its extension UUID are present.
-
-After installation, open Quick Settings and look for **Lens Guard**. Start a video call or another
-camera application to see the active application and camera appear there.
-
-## Install from the source repository
-
-If you downloaded the project source, follow the short command sequence in the
-[per-user installation guide](installation.md). It installs only inside your home directory and
-does not require administrator access.
-
-## First use
-
-1. Enable Lens Guard in the GNOME Extensions application.
-2. Open a camera application such as a video meeting or camera app.
-3. Open Quick Settings and expand **Lens Guard**.
-4. Select **Preferences** if you want to hide the top-bar icon or change unavailable-state warnings.
-
-If GNOME does not list a freshly installed extension, log out and back in once so GNOME Shell can
-refresh its extension list.
-
-## Remove Lens Guard
-
-For the Store path, use **Remove** in GNOME Extensions and uninstall `lensguard-service` with your
-package manager. For the full-package path, uninstall `lensguard`. For a source checkout, use the
-command documented in [Installation details](installation.md#uninstall).
-
-## Need help?
-
-Start with [Troubleshooting](troubleshooting.md). If the issue is about an application that opens
-the camera directly through V4L2 rather than PipeWire, read the detection limitations there before
-reporting a bug.
+See [troubleshooting](troubleshooting.md) for availability categories and capture-path checks.

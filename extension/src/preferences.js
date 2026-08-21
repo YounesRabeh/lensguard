@@ -2,24 +2,24 @@
 
 export const PreferenceKey = Object.freeze({
     SHOW_PANEL_INDICATOR: 'show-panel-indicator',
-    SHOW_BACKEND_UNAVAILABLE_WARNING: 'show-backend-unavailable-warning',
-    SHOW_INDICATOR_DURING_BACKEND_FAILURE:
-        'show-indicator-during-backend-failure',
+    SHOW_OBSERVER_UNAVAILABLE_WARNING: 'show-observer-unavailable-warning',
+    SHOW_INDICATOR_DURING_OBSERVER_FAILURE:
+        'show-indicator-during-observer-failure',
 });
 
 export const DEFAULT_PREFERENCES = Object.freeze({
     showPanelIndicator: true,
-    showBackendUnavailableWarning: true,
-    showIndicatorDuringBackendFailure: true,
+    showObserverUnavailableWarning: true,
+    showIndicatorDuringObserverFailure: true,
 });
 
 export function normalizePreferences(values = {}) {
     return {
         showPanelIndicator: values.showPanelIndicator !== false,
-        showBackendUnavailableWarning:
-            values.showBackendUnavailableWarning !== false,
-        showIndicatorDuringBackendFailure:
-            values.showIndicatorDuringBackendFailure !== false,
+        showObserverUnavailableWarning:
+            values.showObserverUnavailableWarning !== false,
+        showIndicatorDuringObserverFailure:
+            values.showIndicatorDuringObserverFailure !== false,
     };
 }
 
@@ -27,10 +27,10 @@ export function readPreferences(settings) {
     return normalizePreferences({
         showPanelIndicator: settings.get_boolean(
             PreferenceKey.SHOW_PANEL_INDICATOR),
-        showBackendUnavailableWarning: settings.get_boolean(
-            PreferenceKey.SHOW_BACKEND_UNAVAILABLE_WARNING),
-        showIndicatorDuringBackendFailure: settings.get_boolean(
-            PreferenceKey.SHOW_INDICATOR_DURING_BACKEND_FAILURE),
+        showObserverUnavailableWarning: settings.get_boolean(
+            PreferenceKey.SHOW_OBSERVER_UNAVAILABLE_WARNING),
+        showIndicatorDuringObserverFailure: settings.get_boolean(
+            PreferenceKey.SHOW_INDICATOR_DURING_OBSERVER_FAILURE),
     });
 }
 
@@ -42,7 +42,7 @@ export function applyPreferencesToViewState(state, values = {}) {
             ? {...state, panelIconVisible: false}
             : state;
     }
-    const monitoringFailure = state.status === 'backend-unavailable' ||
+    const monitoringFailure = state.status === 'observer-unavailable' ||
         state.status === 'service-unavailable';
     if (!monitoringFailure) {
         if (!hidePanelIndicator)
@@ -50,20 +50,20 @@ export function applyPreferencesToViewState(state, values = {}) {
         return {...state, panelIconVisible: false};
     }
 
-    if (preferences.showBackendUnavailableWarning) {
+    if (preferences.showObserverUnavailableWarning) {
         return {
             ...state,
-            backendWarningVisible: true,
+            observerWarningVisible: true,
             panelIconVisible:
-                preferences.showIndicatorDuringBackendFailure &&
+                preferences.showIndicatorDuringObserverFailure &&
                 !hidePanelIndicator,
         };
     }
 
     return {
         ...state,
-        backendWarningVisible: false,
-        panelIconVisible: preferences.showIndicatorDuringBackendFailure &&
+        observerWarningVisible: false,
+        panelIconVisible: preferences.showIndicatorDuringObserverFailure &&
             !hidePanelIndicator,
         panelIconName: 'dialog-information-symbolic',
         subtitle: 'Camera status unavailable',

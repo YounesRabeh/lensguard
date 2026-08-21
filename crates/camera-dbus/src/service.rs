@@ -51,8 +51,40 @@ impl CameraMonitorInterface {
     }
 
     #[zbus(property)]
-    fn backend_available(&self) -> bool {
-        self.state.backend_available()
+    fn observer_available(&self) -> bool {
+        self.state.observer_available()
+    }
+
+    #[zbus(property)]
+    fn observer_availability(&self) -> &str {
+        self.state.observer_availability().as_str()
+    }
+
+    #[zbus(property)]
+    fn observer_status_detail(&self) -> &str {
+        self.state.observer_status_detail()
+    }
+
+    #[zbus(property)]
+    fn unknown_camera_activity(&self) -> bool {
+        self.state
+            .suppression_diagnostics()
+            .suppressed_unknown_events
+            > 0
+    }
+
+    #[zbus(property)]
+    fn suppressed_broker_events(&self) -> u64 {
+        self.state
+            .suppression_diagnostics()
+            .suppressed_broker_events
+    }
+
+    #[zbus(property)]
+    fn suppressed_unknown_events(&self) -> u64 {
+        self.state
+            .suppression_diagnostics()
+            .suppressed_unknown_events
     }
 
     #[zbus(property(emits_changed_signal = "const"))]
@@ -65,7 +97,7 @@ impl CameraMonitorInterface {
         emitter: &SignalEmitter<'_>,
         active: bool,
         active_session_count: u32,
-        backend_available: bool,
+        observer_available: bool,
     ) -> zbus::Result<()>;
 
     #[zbus(signal)]
@@ -75,9 +107,9 @@ impl CameraMonitorInterface {
     async fn session_stopped(emitter: &SignalEmitter<'_>, session_id: &str) -> zbus::Result<()>;
 
     #[zbus(signal)]
-    async fn backend_availability_changed(
+    async fn observer_status_changed(
         emitter: &SignalEmitter<'_>,
-        available: bool,
+        availability: &str,
     ) -> zbus::Result<()>;
 }
 
@@ -147,17 +179,29 @@ impl DbusService {
         if before.active_session_count() != after.active_session_count() {
             interface.active_session_count_changed(emitter).await?;
         }
-        if before.backend_available != after.backend_available {
-            interface.backend_available_changed(emitter).await?;
-            CameraMonitorInterface::backend_availability_changed(emitter, after.backend_available)
-                .await?;
+        if before.observer_availability != after.observer_availability {
+            interface.observer_available_changed(emitter).await?;
+            interface.observer_availability_changed(emitter).await?;
+            CameraMonitorInterface::observer_status_changed(
+                emitter,
+                after.observer_availability.as_str(),
+            )
+            .await?;
+        }
+        if before.observer_status_detail != after.observer_status_detail {
+            interface.observer_status_detail_changed(emitter).await?;
+        }
+        if before.suppression_diagnostics != after.suppression_diagnostics {
+            interface.unknown_camera_activity_changed(emitter).await?;
+            interface.suppressed_broker_events_changed(emitter).await?;
+            interface.suppressed_unknown_events_changed(emitter).await?;
         }
 
         CameraMonitorInterface::state_changed(
             emitter,
             after.active(),
             session_count(&after),
-            after.backend_available,
+            after.observer_availability.is_available(),
         )
         .await?;
         match event {
@@ -169,8 +213,8 @@ impl DbusService {
                 CameraMonitorInterface::session_stopped(emitter, session_id.as_str()).await?;
             }
             MonitorEvent::SessionUpdated(_)
-            | MonitorEvent::BackendUnavailable { .. }
-            | MonitorEvent::BackendRecovered => {}
+            | MonitorEvent::ObserverAvailabilityChanged { .. }
+            | MonitorEvent::SuppressionDiagnosticsChanged(_) => {}
         }
 
         Ok(true)
@@ -218,8 +262,8 @@ fn session_count(snapshot: &MonitorSnapshot) -> u32 {
 #[cfg(test)]
 mod tests {
     use camera_core::{
-        ApplicationIdentity, CameraDevice, CameraSession, DetectionBackend, DeviceId, MonitorEvent,
-        MonitorState, SessionId,
+        ApplicationIdentity, CameraDevice, CameraSession, CameraSessionState, DeviceId,
+        MonitorEvent, MonitorState, SessionId,
     };
 
     use super::{CameraMonitorInterface, session_count};
@@ -239,8 +283,12 @@ mod tests {
                 display_name: format!("Camera {id}"),
                 node_name: None,
             },
-            started_at_unix_ms: 100,
-            backend: DetectionBackend::PipeWire,
+            process_start_time_ticks: 10,
+            thread_group_id: 42,
+            capture_file_descriptor: 3,
+            started_at_monotonic_ns: 100,
+            last_observed_at_monotonic_ns: 100,
+            state: CameraSessionState::Active,
         }
     }
 

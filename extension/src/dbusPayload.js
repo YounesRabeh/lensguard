@@ -37,7 +37,7 @@ function isUint64(value) {
 }
 
 function normalizeSessionTuple(tuple) {
-    if (!Array.isArray(tuple) || tuple.length !== 8)
+    if (!Array.isArray(tuple) || tuple.length !== 7)
         return null;
 
     const [
@@ -46,15 +46,13 @@ function normalizeSessionTuple(tuple) {
         rawApplicationName,
         rawDeviceId,
         rawDeviceName,
-        rawBackend,
-        startedAtUnixMs,
+        startedAtMonotonicNs,
         processId,
     ] = tuple;
     const sessionId = normalizeIdentifier(rawSessionId);
     const deviceId = normalizeIdentifier(rawDeviceId);
-    const backend = normalizeIdentifier(rawBackend);
-    if (!sessionId || !deviceId || !backend ||
-        !isUint64(startedAtUnixMs) ||
+    if (!sessionId || !deviceId ||
+        !isUint64(startedAtMonotonicNs) ||
         !Number.isInteger(processId) || processId < 0 || processId > 0xffffffff)
         return null;
 
@@ -90,14 +88,27 @@ export function normalizeDbusSnapshot(properties, methodReply) {
     if (properties?.serviceAvailable !== true) {
         return {
             serviceAvailable: false,
-            backendAvailable: false,
+            observerAvailable: false,
+            observerAvailability: 'not-installed',
+            observerStatusDetail: '',
+            unknownCameraActivity: false,
+            suppressedBrokerEvents: 0n,
+            suppressedUnknownEvents: 0n,
             sessions: [],
         };
     }
 
     return {
         serviceAvailable: true,
-        backendAvailable: properties.backendAvailable === true,
+        observerAvailable: properties.observerAvailable === true,
+        observerAvailability: normalizeIdentifier(properties.observerAvailability) ??
+            'connection-failed',
+        observerStatusDetail: normalizeDisplayText(properties.observerStatusDetail, ''),
+        unknownCameraActivity: properties.unknownCameraActivity === true,
+        suppressedBrokerEvents: isUint64(properties.suppressedBrokerEvents)
+            ? properties.suppressedBrokerEvents : 0n,
+        suppressedUnknownEvents: isUint64(properties.suppressedUnknownEvents)
+            ? properties.suppressedUnknownEvents : 0n,
         reportedActive: properties.active === true,
         reportedSessionCount: Number.isInteger(properties.activeSessionCount)
             ? properties.activeSessionCount

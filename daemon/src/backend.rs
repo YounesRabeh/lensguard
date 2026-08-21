@@ -5,11 +5,12 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use camera_core::MonitorEvent;
-use camera_pipewire::{PipeWireError, PipeWireEventSource};
+use camera_core::ObserverAvailability;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
 use crate::backoff::BackoffPolicy;
+use crate::observer::{ObserverError, ObserverEventSource};
 
 const SOURCE_POLL_INTERVAL: Duration = Duration::from_millis(100);
 const SHUTDOWN_POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -30,14 +31,14 @@ pub trait BackendSource: Send {
     ) -> Result<Option<MonitorEvent>, Self::Error>;
 }
 
-impl BackendSource for PipeWireEventSource {
-    type Error = PipeWireError;
+impl BackendSource for ObserverEventSource {
+    type Error = ObserverError;
 
     fn next_event_timeout(
         &mut self,
         timeout: Duration,
     ) -> Result<Option<MonitorEvent>, Self::Error> {
-        PipeWireEventSource::next_event_timeout(self, timeout)
+        ObserverEventSource::next_event_timeout(self, timeout)
     }
 }
 
@@ -52,18 +53,44 @@ pub trait BackendFactory: Send + Sync + 'static {
     ///
     /// Returns the backend-specific connection or initialization failure.
     fn connect(&self) -> Result<Self::Source, Self::Error>;
+
+    #[must_use]
+    fn connected_event() -> Option<MonitorEvent> {
+        Some(MonitorEvent::ObserverAvailabilityChanged {
+            availability: ObserverAvailability::Available,
+            detail: String::new(),
+        })
+    }
+
+    fn unavailable_event(error: &Self::Error) -> MonitorEvent {
+        MonitorEvent::ObserverAvailabilityChanged {
+            availability: ObserverAvailability::ConnectionFailed,
+            detail: bounded_failure_text(&error.to_string()),
+        }
+    }
 }
 
-/// Production `PipeWire` backend factory.
+/// Production direct-V4L2 observer factory.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct PipeWireBackendFactory;
+pub struct ObserverBackendFactory;
 
-impl BackendFactory for PipeWireBackendFactory {
-    type Source = PipeWireEventSource;
-    type Error = PipeWireError;
+impl BackendFactory for ObserverBackendFactory {
+    type Source = ObserverEventSource;
+    type Error = ObserverError;
 
     fn connect(&self) -> Result<Self::Source, Self::Error> {
-        PipeWireEventSource::connect()
+        ObserverEventSource::connect()
+    }
+
+    fn connected_event() -> Option<MonitorEvent> {
+        None
+    }
+
+    fn unavailable_event(error: &Self::Error) -> MonitorEvent {
+        MonitorEvent::ObserverAvailabilityChanged {
+            availability: error.availability(),
+            detail: bounded_failure_text(&error.to_string()),
+        }
     }
 }
 
@@ -94,22 +121,20 @@ where
 
         let mut source = match factory.connect() {
             Ok(source) => {
-                info!("PipeWire backend connected");
+                info!("V4L2 observer connected");
                 attempt = 0;
-                if !send(events, shutdown, MonitorEvent::BackendRecovered) {
+                if let Some(event) = F::connected_event()
+                    && !send(events, shutdown, event)
+                {
                     return send_failure_exit(shutdown);
                 }
                 source
             }
             Err(error) => {
+                let unavailable = F::unavailable_event(&error);
                 let error = bounded_failure_text(&error.to_string());
-                let reason = format!("PipeWire backend connection failed: {error}");
-                warn!(attempt, %error, "PipeWire backend unavailable; retrying");
-                if !send(
-                    events,
-                    shutdown,
-                    MonitorEvent::BackendUnavailable { reason },
-                ) {
+                warn!(attempt, %error, "V4L2 observer unavailable; retrying");
+                if !send(events, shutdown, unavailable) {
                     return send_failure_exit(shutdown);
                 }
                 let delay = backoff.delay(attempt);
@@ -134,12 +159,15 @@ where
                 Ok(None) => {}
                 Err(error) => {
                     let error = bounded_failure_text(&error.to_string());
-                    let reason = format!("PipeWire backend disconnected: {error}");
-                    warn!(%error, "PipeWire backend disconnected; reconciling and retrying");
+                    let reason = format!("V4L2 observer disconnected: {error}");
+                    warn!(%error, "V4L2 observer disconnected; reconciling and retrying");
                     if !send(
                         events,
                         shutdown,
-                        MonitorEvent::BackendUnavailable { reason },
+                        MonitorEvent::ObserverAvailabilityChanged {
+                            availability: ObserverAvailability::BackendLost,
+                            detail: reason,
+                        },
                     ) {
                         return send_failure_exit(shutdown);
                     }

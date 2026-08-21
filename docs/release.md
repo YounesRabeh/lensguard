@@ -132,6 +132,6 @@ does not remove or modify the GNOME Store extension.
 
 ## Known detection limitation
 
-LensGuard observes PipeWire camera relationships. Applications that open `/dev/video*` directly
-without creating a PipeWire session are not detected in this release candidate. Direct V4L2
+LensGuard observes confirmed direct V4L2 streaming capture. Brokered camera sessions are
+intentionally left to GNOME's privacy indicator. V4L2 read-I/O
 monitoring is explicitly deferred until after the stable-release work.

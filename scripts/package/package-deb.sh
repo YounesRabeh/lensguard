@@ -47,7 +47,11 @@ build_package() {
 
     "$repo_root/scripts/package/stage-system-package.sh" "${stage_args[@]}"
     strip --strip-unneeded "$stage_root/usr/lib/lensguard/camera-monitor"
+    strip --strip-unneeded "$stage_root/usr/lib/lensguard/lensguard-v4l2-observer"
     install -d -m 0755 -- "$stage_root/DEBIAN"
+    install -m 0755 -- "$repo_root/packaging/deb/postinst.in" "$stage_root/DEBIAN/postinst"
+    install -m 0755 -- "$repo_root/packaging/deb/prerm.in" "$stage_root/DEBIAN/prerm"
+    install -m 0755 -- "$repo_root/packaging/deb/postrm.in" "$stage_root/DEBIAN/postrm"
     install -m 0644 -- "$repo_root/packaging/deb/copyright.in" \
         "$stage_root/usr/share/doc/$package_name/copyright"
     printf '%s\n' \

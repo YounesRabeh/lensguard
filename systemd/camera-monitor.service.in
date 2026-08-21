@@ -1,7 +1,7 @@
 [Unit]
 Description=LensGuard camera access monitor
 Documentation=https://github.com/younesrabeh/lensguard
-After=graphical-session.target pipewire.service
+After=graphical-session.target
 PartOf=graphical-session.target
 StartLimitIntervalSec=30
 StartLimitBurst=5

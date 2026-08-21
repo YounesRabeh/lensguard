@@ -13,14 +13,14 @@ use tokio::time::timeout;
 use tracing::{info, warn};
 
 use crate::application::{ApplicationError, run_application};
-use crate::backend::{PipeWireBackendFactory, SupervisorExit, run_backend_supervisor};
+use crate::backend::{ObserverBackendFactory, SupervisorExit, run_backend_supervisor};
 use crate::backoff::BackoffPolicy;
 
 /// Capacity of each application-layer channel. Backpressure is deliberate and bounded.
 pub const APPLICATION_QUEUE_CAPACITY: usize = 128;
 const RESOLVER_CACHE_CAPACITY: usize = 128;
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
-const INITIAL_BACKEND_REASON: &str = "PipeWire backend connection is pending";
+const INITIAL_OBSERVER_REASON: &str = "V4L2 observer connection is pending";
 
 /// Long-running daemon failure.
 #[derive(Debug, Error)]
@@ -64,7 +64,7 @@ pub async fn run_daemon() -> Result<(), RuntimeError> {
     let backend_shutdown = Arc::clone(&shutdown);
     let mut backend_task = tokio::task::spawn_blocking(move || {
         run_backend_supervisor(
-            &PipeWireBackendFactory,
+            &ObserverBackendFactory,
             &backend_tx,
             &backend_shutdown,
             BackoffPolicy::default(),
@@ -183,8 +183,9 @@ pub async fn publish_events(
 #[must_use]
 pub fn initializing_state() -> MonitorState {
     let mut state = MonitorState::new();
-    state.apply(MonitorEvent::BackendUnavailable {
-        reason: String::from(INITIAL_BACKEND_REASON),
+    state.apply(MonitorEvent::ObserverAvailabilityChanged {
+        availability: camera_core::ObserverAvailability::ConnectionFailed,
+        detail: String::from(INITIAL_OBSERVER_REASON),
     });
     state
 }
