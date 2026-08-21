@@ -69,6 +69,9 @@ export async function run() {
         await waitFor(() => indicators().length === 1,
             'extension did not add its Quick Settings indicator ' +
             `(state=${extension.state}, error=${extension.error ?? 'none'})`);
+        assert(Main.panel.statusArea.quickSettings._indicators
+            .get_children()[0] === indicator(),
+        'LensGuard indicator is not the first status-cluster icon');
         settings = extension.stateObj?._settings;
         assert(settings,
             'loaded extension did not retain its GSettings instance');

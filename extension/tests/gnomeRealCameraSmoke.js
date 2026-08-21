@@ -49,6 +49,9 @@ export async function run() {
     await waitFor(() => indicators().length === 1,
         'extension did not add its Quick Settings indicator ' +
         `(state=${extension.state}, error=${extension.error ?? 'none'})`);
+    assert(Main.panel.statusArea.quickSettings._indicators
+        .get_children()[0] === indicator(),
+    'LensGuard indicator is not the first status-cluster icon');
     await waitFor(() => indicator()._statusIcon.visible,
         'real camera session did not show the top-bar icon');
     await waitFor(() => sessionLabels().some(label =>

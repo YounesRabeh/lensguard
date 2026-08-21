@@ -31,8 +31,11 @@ export default class LensGuardExtension extends Extension {
 
         this._indicator = new LensGuardIndicator(
             () => this.openPreferences());
-        // GNOME places external indicators at the end of its privacy-indicator group.
-        Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
+        const quickSettings = Main.panel.statusArea.quickSettings;
+        quickSettings.addExternalIndicator(this._indicator);
+        // External indicators are appended by default. Keep LensGuard in the
+        // first (far-left in LTR layouts) status-cluster slot.
+        quickSettings._indicators.set_child_at_index(this._indicator, 0);
 
         this._client = new DbusClient(
             state => {
