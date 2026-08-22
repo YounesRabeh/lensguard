@@ -143,4 +143,4 @@ jobs:
             --draft \
             --verify-tag \
             --generate-notes \
-            --title "LensGuard ${RELEASE_TAG#v}"
+            --title "LensGuard ${RELEASE_TAG}"
