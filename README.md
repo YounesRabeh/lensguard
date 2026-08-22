@@ -1,48 +1,69 @@
 # LensGuard
 
-LensGuard is a GNOME Shell privacy indicator for applications that access a camera **directly
-through V4L2**. It is intentionally complementary to GNOME's brokered-camera indicator: trusted
-desktop broker capture is suppressed so the same camera use is never shown twice.
+LensGuard is a GNOME Shell privacy indicator for applications that access cameras directly through
+V4L2. It complements GNOME's PipeWire camera indicator without reporting the same session twice.
 
-LensGuard reports a normal camera session only after a successful `VIDIOC_STREAMON`. Opening or
-probing `/dev/videoN`, a failed capture request, an unverified process, or an event from a trusted
-broker cannot activate the normal indicator.
+![LensGuard showing direct camera activity](.github/assets/app-showcase.png)
 
-## Components
+## What it does
 
-- `lensguard-v4l2-observer`: a small privileged system service with narrowly scoped eBPF
-  tracepoints. It records operation metadata only—never frames, buffers, command lines, process
-  memory, networking, or persistent history.
-- `camera-monitor`: an unprivileged per-user daemon that validates observer messages, resolves
-  application and physical-device metadata, owns session state, and publishes user-session D-Bus.
-- `lensguard@younesrabeh.github.io`: the unprivileged GNOME Shell extension.
+- Detects successful V4L2 streaming capture from apps such as browsers and Electron clients.
+- Shows the application and physical camera in GNOME Quick Settings.
+- Reports monitoring failures clearly instead of presenting an uncertain “camera idle” state.
+- Observes metadata only—never frames, video buffers, command lines, or persistent history.
 
-The extension ZIP never contains either native binary, eBPF code, capabilities, systemd units, or
-policy files. Install the matching `lensguard-service` native package alongside the Store
-extension, or install the distribution's combined `lensguard` package.
+![LensGuard Quick Settings menu](.github/assets/menu-showcase.png)
 
-## Coverage
+Direct Discord capture:
 
-Streaming V4L2 applications—including direct camera access from browsers and Electron clients
-such as Chrome, Firefox, Discord, and Telegram when they bypass the desktop broker—are detected
-when their driver successfully accepts `VIDIOC_STREAMON`. Applications may choose a brokered path;
-that path remains GNOME's responsibility and is deliberately absent from LensGuard.
+![LensGuard identifying Discord camera use](.github/assets/discord-example.png)
 
-V4L2 read-I/O capture is not enabled in this release because tracing generic `read(2)` would
-broaden collection beyond the reviewed camera-only boundary. LensGuard reports observer or owner
-uncertainty explicitly instead of guessing.
+Monitoring failures remain visible:
 
-See [installation](docs/installation.md), [architecture](docs/architecture.md), and
-[troubleshooting](docs/troubleshooting.md).
+![LensGuard monitoring warning](.github/assets/dbus-error.png)
+
+## Install
+
+On Fedora, install the complete package from COPR:
+
+```bash
+sudo dnf copr enable younesrabeh/lensguard
+sudo dnf install lensguard
+```
+
+The package enables the privileged metadata observer automatically and installs the GNOME
+extension system-wide. Log out and back in once, then enable LensGuard:
+
+```bash
+gnome-extensions enable lensguard@younesrabeh.github.io
+```
+
+Alternatively, install the extension from extensions.gnome.org and pair it with the service-only
+`lensguard-service` package. Do not install both native packages together.
+
+See the [installation guide](docs/installation.md) for Fedora, Debian/Ubuntu, Arch Linux, local
+packages, upgrades, and removal.
+
+## Detection boundary
+
+LensGuard reports direct V4L2 streaming only after a successful `VIDIOC_STREAMON`. Camera access
+through a trusted desktop broker remains GNOME's responsibility. V4L2 read-I/O is not detected in
+this release.
+
+## Documentation
+
+- [Getting started](docs/getting-started.md)
+- [Installation](docs/installation.md)
+- [Architecture and privacy boundary](docs/architecture.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [D-Bus API](docs/dbus-api.md)
+- [Development](docs/development.md)
+- [Release process](docs/release.md)
 
 ## Development
 
 ```bash
 make check
-cargo run -p camera-monitor -- inspect-v4l2
 ```
 
-The second command expects the packaged system observer. See [development](docs/development.md)
-for a local workflow and security notes.
-
-LensGuard is licensed under GPL-3.0-or-later.
+LensGuard is licensed under [GPL-3.0-or-later](LICENSE).

@@ -1,0 +1,22 @@
+# shellcheck shell=bash
+
+post_install() {
+    systemctl daemon-reload || true
+    if ! systemctl enable --now lensguard-v4l2-observer.service; then
+        printf '%s\n' \
+            'LensGuard: could not start the V4L2 observer; run systemctl enable --now lensguard-v4l2-observer.service as root.' >&2
+    fi
+}
+
+post_upgrade() {
+    systemctl daemon-reload || true
+    systemctl try-restart lensguard-v4l2-observer.service || true
+}
+
+pre_remove() {
+    systemctl disable --now lensguard-v4l2-observer.service || true
+}
+
+post_remove() {
+    systemctl daemon-reload || true
+}

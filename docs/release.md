@@ -133,13 +133,16 @@ sudo dnf install "./lensguard-$version"-*.x86_64.rpm
 The full package installs only under `/usr`:
 
 - `/usr/libexec/lensguard/camera-monitor`
+- `/usr/libexec/lensguard/lensguard-v4l2-observer`
+- `/usr/lib/systemd/system/lensguard-v4l2-observer.service`
 - `/usr/lib/systemd/user/camera-monitor.service`
 - `/usr/share/dbus-1/services/io.github.younesrabeh.CameraMonitor.service`
 - `/usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io/`
 
-The daemon is activated on demand through the user session bus. It is not enabled as a system
-service and does not run as root. Log out and back in after the first system installation so GNOME
-Shell discovers the extension, then enable **Lens Guard** in Extensions.
+The privileged, metadata-only observer is enabled and started during a fresh package installation.
+The unprivileged user daemon is activated on demand through the user session bus; it is not enabled
+as a system service and does not run as root. Log out and back in after the first system installation
+so GNOME Shell discovers the extension, then enable **Lens Guard** in Extensions.
 
 For an extension installed from extensions.gnome.org, install the matching
 `lensguard-service` package instead. It installs the daemon, systemd user unit, and D-Bus

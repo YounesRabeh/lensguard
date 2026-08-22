@@ -1,8 +1,8 @@
 # Installation
 
 LensGuard needs a native service because verified V4L2 operation results require a small
-privileged eBPF observer. The GNOME extension cannot and does not install or start privileged
-code.
+privileged eBPF observer. The GNOME extension cannot install or start privileged code; the native
+package enables and starts the observer during installation.
 
 ## GNOME Extensions website
 
@@ -91,13 +91,23 @@ artifact can be installed with the same `dnf install ./file.rpm`, `apt install .
 Do not substitute `make install-local` for this step. That target installs only an unprivileged
 development copy under the current user's home directory and cannot install the V4L2 observer.
 
-### 2. Enable the observer
+### 2. Verify the observer
 
-Enable and start the installed system observer:
+On a fresh package installation, the observer is enabled and started automatically. Verify it with:
+
+```bash
+systemctl status lensguard-v4l2-observer.service
+```
+
+If an older installation or a local system policy left it disabled, enable it manually:
 
 ```bash
 sudo systemctl enable --now lensguard-v4l2-observer.service
 ```
+
+To opt out of privileged monitoring, disable it explicitly with
+`sudo systemctl disable --now lensguard-v4l2-observer.service`. LensGuard will then display its
+monitoring-unavailable warning.
 
 ### 3. Install the extension
 

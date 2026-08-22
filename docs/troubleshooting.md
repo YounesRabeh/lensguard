@@ -10,6 +10,14 @@ systemctl --user status camera-monitor.service
 camera-monitor inspect-v4l2
 ```
 
+Fresh native-package installations enable and start the system observer automatically. If it is
+disabled or inactive, recover with:
+
+```bash
+sudo systemctl enable --now lensguard-v4l2-observer.service
+systemctl --user restart camera-monitor.service
+```
+
 `not-installed` usually means the Unix socket is absent. `missing-capability` means the system
 service could not load or attach BPF. `unsupported-kernel` means a required tracepoint or kernel
 facility is absent. `blocked-by-policy` covers a missing/malformed broker policy or a kernel

@@ -72,6 +72,7 @@ systemd_destination=$stage_root/usr/lib/systemd/user/camera-monitor.service
 dbus_destination=$stage_root/usr/share/dbus-1/services/$bus_name.service
 observer_destination=$stage_root/usr/lib/lensguard/lensguard-v4l2-observer
 observer_unit_destination=$stage_root/usr/lib/systemd/system/lensguard-v4l2-observer.service
+observer_preset_destination=$stage_root/usr/lib/systemd/system-preset/90-lensguard.preset
 policy_destination=$stage_root/usr/share/lensguard/trusted-brokers-v1.json
 
 cargo build --locked --release -p camera-monitor -p lensguard-v4l2-observer \
@@ -101,6 +102,7 @@ install -d -m 0755 -- \
     "$(dirname -- "$systemd_destination")" \
     "$(dirname -- "$dbus_destination")" \
     "$(dirname -- "$observer_unit_destination")" \
+    "$(dirname -- "$observer_preset_destination")" \
     "$(dirname -- "$policy_destination")" \
     "$stage_root/usr/share/doc/$package_name" \
     "$stage_root/usr/share/licenses/$package_name"
@@ -112,6 +114,8 @@ sed "s|@EXECUTABLE@|$escaped_daemon_path|g" \
     "$repo_root/systemd/$bus_name.service.in" > "$dbus_destination"
 sed "s|@EXECUTABLE@|/usr/lib/lensguard/lensguard-v4l2-observer|g" \
     "$repo_root/systemd/lensguard-v4l2-observer.service.in" > "$observer_unit_destination"
+install -m 0644 -- "$repo_root/systemd/90-lensguard.preset" \
+    "$observer_preset_destination"
 install -m 0644 -- "$repo_root/observer/policy/trusted-brokers-v1.json" \
     "$policy_destination"
 if $include_extension; then

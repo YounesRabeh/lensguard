@@ -30,6 +30,7 @@ cargo build --locked --offline --release -p camera-monitor -p lensguard-v4l2-obs
 install -d -m 0755 \
     %{buildroot}%{_libexecdir}/lensguard \
     %{buildroot}%{_unitdir} \
+    %{buildroot}%{_presetdir} \
     %{buildroot}%{_userunitdir} \
     %{buildroot}%{_datadir}/dbus-1/services \
     %{buildroot}%{_datadir}/lensguard \
@@ -47,6 +48,8 @@ sed 's|@EXECUTABLE@|%{_libexecdir}/lensguard/camera-monitor|g' \
 sed 's|@EXECUTABLE@|%{_libexecdir}/lensguard/lensguard-v4l2-observer|g' \
     systemd/lensguard-v4l2-observer.service.in \
     > %{buildroot}%{_unitdir}/lensguard-v4l2-observer.service
+install -m 0644 systemd/90-lensguard.preset \
+    %{buildroot}%{_presetdir}/90-lensguard.preset
 install -m 0644 observer/policy/trusted-brokers-v1.json \
     %{buildroot}%{_datadir}/lensguard/trusted-brokers-v1.json
 install -m 0644 README.md %{buildroot}%{_datadir}/doc/lensguard-service/README.md
@@ -59,6 +62,10 @@ install -m 0644 LICENSE %{buildroot}%{_datadir}/licenses/lensguard-service/LICEN
 %post
 %systemd_user_post camera-monitor.service
 %systemd_post lensguard-v4l2-observer.service
+if [ "$1" -eq 1 ] && [ -d /run/systemd/system ]; then
+    systemctl daemon-reload || :
+    systemctl start lensguard-v4l2-observer.service || :
+fi
 
 %preun
 %systemd_user_preun camera-monitor.service
@@ -77,6 +84,7 @@ install -m 0644 LICENSE %{buildroot}%{_datadir}/licenses/lensguard-service/LICEN
 %{_libexecdir}/lensguard/camera-monitor
 %{_libexecdir}/lensguard/lensguard-v4l2-observer
 %{_unitdir}/lensguard-v4l2-observer.service
+%{_presetdir}/90-lensguard.preset
 %{_userunitdir}/camera-monitor.service
 %{_datadir}/dbus-1/services/io.github.younesrabeh.CameraMonitor.service
 %{_datadir}/lensguard/trusted-brokers-v1.json

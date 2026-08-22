@@ -13,7 +13,7 @@ if [[ $output_dir != /* ]]; then
     output_dir=$PWD/$output_dir
 fi
 
-for command_name in makepkg mktemp sed sha256sum tar; do
+for command_name in install makepkg mktemp sed sha256sum tar; do
     command -v "$command_name" >/dev/null || {
         printf 'package-arch.sh: required command not found: %s\n' "$command_name" >&2
         exit 1
@@ -45,6 +45,8 @@ sed \
     -e "s|@ARCHITECTURE@|$architecture|g" \
     -e "s|@SHA256@|$archive_sha256|g" \
     "$repo_root/packaging/arch/PKGBUILD.in" > "$work_dir/PKGBUILD"
+install -m 0644 -- "$repo_root/packaging/arch/lensguard.install" \
+    "$work_dir/lensguard.install"
 
 (
     cd "$work_dir"
@@ -62,6 +64,7 @@ find "$output_dir" -maxdepth 1 -type f \
     -o -name "lensguard-debug-$version-*.pkg.tar.*" \) -delete
 install -m 0644 -- "${packages[0]}" "$output_dir/$(basename -- "${packages[0]}")"
 install -m 0644 -- "$work_dir/PKGBUILD" "$output_dir/lensguard-$version-PKGBUILD"
+install -m 0644 -- "$work_dir/lensguard.install" "$output_dir/lensguard.install"
 
 service_work=$work_dir/service
 service_stage_root=$service_work/root
@@ -78,6 +81,8 @@ sed \
     -e "s|@ARCHITECTURE@|$architecture|g" \
     -e "s|@SHA256@|$service_archive_sha256|g" \
     "$repo_root/packaging/arch/PKGBUILD.service.in" > "$service_work/PKGBUILD"
+install -m 0644 -- "$repo_root/packaging/arch/lensguard.install" \
+    "$service_work/lensguard-service.install"
 (
     cd "$service_work"
     makepkg --noconfirm --cleanbuild --nodeps
@@ -96,4 +101,6 @@ install -m 0644 -- "${service_packages[0]}" \
     "$output_dir/$(basename -- "${service_packages[0]}")"
 install -m 0644 -- "$service_work/PKGBUILD" \
     "$output_dir/lensguard-service-$version-PKGBUILD"
+install -m 0644 -- "$service_work/lensguard-service.install" \
+    "$output_dir/lensguard-service.install"
 printf '%s\n' "Created full and service-only Arch packages in $output_dir"

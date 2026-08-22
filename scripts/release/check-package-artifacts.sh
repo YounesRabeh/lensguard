@@ -146,6 +146,7 @@ for dependency in dbus gnome-shell systemd; do
 done
 grep -Fq './usr/lib/lensguard/camera-monitor' <<<"$deb_contents"
 grep -Fq './usr/lib/lensguard/lensguard-v4l2-observer' <<<"$deb_contents"
+grep -Fq './usr/lib/systemd/system-preset/90-lensguard.preset' <<<"$deb_contents"
 grep -Fq './usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io/metadata.json' \
     <<<"$deb_contents"
 
@@ -155,6 +156,8 @@ grep -Eq '(^|, )lensguard([ ,]|$)' <<<"$(dpkg-deb --field "$service_deb" Conflic
 service_deb_contents=$(dpkg-deb --contents "$service_deb")
 grep -Fq './usr/lib/lensguard/camera-monitor' <<<"$service_deb_contents"
 grep -Fq './usr/lib/lensguard/lensguard-v4l2-observer' <<<"$service_deb_contents"
+grep -Fq './usr/lib/systemd/system-preset/90-lensguard.preset' \
+    <<<"$service_deb_contents"
 if grep -Fq './usr/share/gnome-shell/extensions/' <<<"$service_deb_contents"; then
     printf '%s\n' 'service DEB contains GNOME extension files' >&2
     exit 1
@@ -172,6 +175,7 @@ for dependency in dbus gnome-shell systemd; do
 done
 grep -Fxq '/usr/libexec/lensguard/camera-monitor' <<<"$rpm_contents"
 grep -Fxq '/usr/libexec/lensguard/lensguard-v4l2-observer' <<<"$rpm_contents"
+grep -Fxq '/usr/lib/systemd/system-preset/90-lensguard.preset' <<<"$rpm_contents"
 grep -Fxq '/usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io/metadata.json' \
     <<<"$rpm_contents"
 
@@ -181,6 +185,8 @@ grep -Fxq 'lensguard' <<<"$(rpm -qp --conflicts "$service_rpm_package")"
 service_rpm_contents=$(rpm -qpl "$service_rpm_package")
 grep -Fxq '/usr/libexec/lensguard/camera-monitor' <<<"$service_rpm_contents"
 grep -Fxq '/usr/libexec/lensguard/lensguard-v4l2-observer' <<<"$service_rpm_contents"
+grep -Fxq '/usr/lib/systemd/system-preset/90-lensguard.preset' \
+    <<<"$service_rpm_contents"
 if grep -Fq '/usr/share/gnome-shell/extensions/' <<<"$service_rpm_contents"; then
     printf '%s\n' 'service RPM contains GNOME extension files' >&2
     exit 1
@@ -196,6 +202,7 @@ for dependency in dbus gnome-shell systemd; do
 done
 grep -Fxq 'usr/lib/lensguard/camera-monitor' <<<"$arch_contents"
 grep -Fxq 'usr/lib/lensguard/lensguard-v4l2-observer' <<<"$arch_contents"
+grep -Fxq 'usr/lib/systemd/system-preset/90-lensguard.preset' <<<"$arch_contents"
 grep -Fxq 'usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io/metadata.json' \
     <<<"$arch_contents"
 
@@ -206,6 +213,8 @@ grep -Fxq "pkgver = $version-1" <<<"$service_package_info"
 grep -Fxq 'conflict = lensguard' <<<"$service_package_info"
 grep -Fxq 'usr/lib/lensguard/camera-monitor' <<<"$service_arch_contents"
 grep -Fxq 'usr/lib/lensguard/lensguard-v4l2-observer' <<<"$service_arch_contents"
+grep -Fxq 'usr/lib/systemd/system-preset/90-lensguard.preset' \
+    <<<"$service_arch_contents"
 if grep -Fq 'usr/share/gnome-shell/extensions/' <<<"$service_arch_contents"; then
     printf '%s\n' 'service Arch package contains GNOME extension files' >&2
     exit 1

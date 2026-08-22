@@ -106,7 +106,7 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "camera-app-resolver"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "camera-core",
  "thiserror 2.0.19",
@@ -114,14 +114,14 @@ dependencies = [
 
 [[package]]
 name = "camera-core"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "camera-dbus"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "camera-core",
  "futures-util",
@@ -133,7 +133,7 @@ dependencies = [
 
 [[package]]
 name = "camera-monitor"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "camera-app-resolver",
  "camera-core",
@@ -371,7 +371,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "lensguard-v4l2-observer"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "aya",
  "bytes",

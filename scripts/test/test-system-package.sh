@@ -25,6 +25,7 @@ stage_root=$test_root/root
 daemon=$stage_root/usr/libexec/lensguard/camera-monitor
 observer=$stage_root/usr/lib/lensguard/lensguard-v4l2-observer
 observer_unit=$stage_root/usr/lib/systemd/system/lensguard-v4l2-observer.service
+observer_preset=$stage_root/usr/lib/systemd/system-preset/90-lensguard.preset
 broker_policy=$stage_root/usr/share/lensguard/trusted-brokers-v1.json
 unit=$stage_root/usr/lib/systemd/user/camera-monitor.service
 activation=$stage_root/usr/share/dbus-1/services/io.github.younesrabeh.CameraMonitor.service
@@ -36,6 +37,7 @@ extension=$stage_root/usr/share/gnome-shell/extensions/lensguard@younesrabeh.git
 [[ $(stat --format='%a' "$daemon") == 755 ]]
 [[ $(stat --format='%a' "$observer") == 755 ]]
 [[ $(stat --format='%a' "$observer_unit") == 644 ]]
+[[ $(stat --format='%a' "$observer_preset") == 644 ]]
 [[ $(stat --format='%a' "$broker_policy") == 644 ]]
 [[ $(stat --format='%a' "$unit") == 644 ]]
 [[ $(stat --format='%a' "$activation") == 644 ]]
@@ -44,6 +46,7 @@ extension=$stage_root/usr/share/gnome-shell/extensions/lensguard@younesrabeh.git
 rg -Fq 'ExecStart="/usr/libexec/lensguard/camera-monitor" --log-level info run' "$unit"
 rg -Fq 'Exec="/usr/libexec/lensguard/camera-monitor" --log-level info run' "$activation"
 rg -Fq 'SystemdService=camera-monitor.service' "$activation"
+rg -Fxq 'enable lensguard-v4l2-observer.service' "$observer_preset"
 
 if find "$extension" -type f | rg -q \
     '/(tests?|fixtures|mocks?)/|mockDataProvider|gnomeSmoke|gnomeScreenshot'; then
@@ -66,6 +69,7 @@ service_root=$test_root/service-root
 [[ -x $service_root/usr/libexec/lensguard/camera-monitor ]]
 [[ -x $service_root/usr/lib/lensguard/lensguard-v4l2-observer ]]
 [[ -f $service_root/usr/lib/systemd/system/lensguard-v4l2-observer.service ]]
+[[ -f $service_root/usr/lib/systemd/system-preset/90-lensguard.preset ]]
 [[ -f $service_root/usr/share/lensguard/trusted-brokers-v1.json ]]
 [[ -f $service_root/usr/lib/systemd/user/camera-monitor.service ]]
 [[ -f $service_root/usr/share/dbus-1/services/io.github.younesrabeh.CameraMonitor.service ]]

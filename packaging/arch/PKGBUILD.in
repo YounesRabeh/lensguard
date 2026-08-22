@@ -11,6 +11,7 @@ conflicts=('lensguard-service')
 source=('lensguard-root.tar.gz')
 sha256sums=('@SHA256@')
 options=('strip' '!debug')
+install=lensguard.install
 
 package() {
     install -d "$pkgdir"
