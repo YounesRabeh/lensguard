@@ -4,12 +4,14 @@ function fail(message) {
   throw new Error(`metadata validation failed: ${message}`);
 }
 
-if (ARGV.length !== 1)
-  fail('expected a metadata.json path');
+if (ARGV.length !== 2)
+  fail('expected a metadata.json path and workspace version');
 
-const [loaded, contents] = GLib.file_get_contents(ARGV[0]);
+const [metadataPath, workspaceVersion] = ARGV;
+
+const [loaded, contents] = GLib.file_get_contents(metadataPath);
 if (!loaded)
-  fail(`could not read ${ARGV[0]}`);
+  fail(`could not read ${metadataPath}`);
 
 let metadata;
 try {
@@ -28,6 +30,9 @@ if (!Array.isArray(metadata['shell-version']) || metadata['shell-version'].lengt
 
 if (typeof metadata['version-name'] !== 'string' || !metadata['version-name'])
   fail('version-name must be a non-empty string');
+
+if (metadata['version-name'] !== workspaceVersion)
+  fail(`version-name ${metadata['version-name']} does not match workspace ${workspaceVersion}`);
 
 if (metadata['settings-schema'] !== 'org.gnome.shell.extensions.lensguard')
   fail('missing or unexpected settings-schema');
