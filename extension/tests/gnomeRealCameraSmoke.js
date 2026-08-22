@@ -52,6 +52,8 @@ export async function run() {
     assert(Main.panel.statusArea.quickSettings._indicators
         .get_children()[0] === indicator(),
     'LensGuard indicator is not the first status-cluster icon');
+    assert(!indicator()._toggle.visible,
+        'Quick Settings tile is visible by default');
     await waitFor(() => indicator()._statusIcon.visible,
         'real camera session did not show the top-bar icon');
     await waitFor(() => sessionLabels().some(label =>

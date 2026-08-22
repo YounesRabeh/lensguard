@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 export const PreferenceKey = Object.freeze({
+    SHOW_QUICK_SETTINGS_TILE: 'show-quick-settings-tile',
     SHOW_PANEL_INDICATOR: 'show-panel-indicator',
     SHOW_OBSERVER_UNAVAILABLE_WARNING: 'show-observer-unavailable-warning',
     SHOW_INDICATOR_DURING_OBSERVER_FAILURE:
@@ -8,6 +9,7 @@ export const PreferenceKey = Object.freeze({
 });
 
 export const DEFAULT_PREFERENCES = Object.freeze({
+    showQuickSettingsTile: false,
     showPanelIndicator: true,
     showObserverUnavailableWarning: true,
     showIndicatorDuringObserverFailure: true,
@@ -15,6 +17,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
 
 export function normalizePreferences(values = {}) {
     return {
+        showQuickSettingsTile: values.showQuickSettingsTile === true,
         showPanelIndicator: values.showPanelIndicator !== false,
         showObserverUnavailableWarning:
             values.showObserverUnavailableWarning !== false,
@@ -25,6 +28,8 @@ export function normalizePreferences(values = {}) {
 
 export function readPreferences(settings) {
     return normalizePreferences({
+        showQuickSettingsTile: settings.get_boolean(
+            PreferenceKey.SHOW_QUICK_SETTINGS_TILE),
         showPanelIndicator: settings.get_boolean(
             PreferenceKey.SHOW_PANEL_INDICATOR),
         showObserverUnavailableWarning: settings.get_boolean(

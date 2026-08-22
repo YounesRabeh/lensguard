@@ -18,6 +18,7 @@ const schema = source.lookup(SCHEMA_ID, false);
 assert(schema, `compiled schema ${SCHEMA_ID} was not found`);
 
 const expectedDefaults = new Map([
+    ['show-quick-settings-tile', false],
     ['show-panel-indicator', true],
     ['show-observer-unavailable-warning', true],
     ['show-indicator-during-observer-failure', true],

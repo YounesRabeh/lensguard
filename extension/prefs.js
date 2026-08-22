@@ -34,19 +34,29 @@ export default class LensGuardPreferences extends ExtensionPreferences {
         failureGroup.add(indicatorRow);
         page.add(failureGroup);
 
-        const panelGroup = new Adw.PreferencesGroup({
-            title: 'Panel indicator',
-            description: 'Choose whether LensGuard adds an icon to the GNOME top bar.',
+        const visibilityGroup = new Adw.PreferencesGroup({
+            title: 'Shell visibility',
+            description: 'Choose where LensGuard appears in GNOME Shell.',
+        });
+        const quickSettingsRow = new Adw.SwitchRow({
+            title: 'Show the LensGuard Quick Settings tile',
+            subtitle: 'Show camera status and the active application list in Quick Settings.',
         });
         const panelRow = new Adw.SwitchRow({
             title: 'Show the LensGuard panel icon',
-            subtitle: 'Keep the Quick Settings tile and application list available when disabled.',
+            subtitle: 'Show the top-bar icon while direct camera use is detected.',
         });
-        panelGroup.add(panelRow);
-        page.add(panelGroup);
+        visibilityGroup.add(quickSettingsRow);
+        visibilityGroup.add(panelRow);
+        page.add(visibilityGroup);
         window.add(page);
 
         window._settings = this.getSettings();
+        window._settings.bind(
+            PreferenceKey.SHOW_QUICK_SETTINGS_TILE,
+            quickSettingsRow,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT);
         window._settings.bind(
             PreferenceKey.SHOW_PANEL_INDICATOR,
             panelRow,

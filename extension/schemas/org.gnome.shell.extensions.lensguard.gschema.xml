@@ -2,6 +2,13 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.lensguard"
           path="/org/gnome/shell/extensions/lensguard/">
+    <key name="show-quick-settings-tile" type="b">
+      <default>false</default>
+      <summary>Show the LensGuard Quick Settings tile</summary>
+      <description>
+        Show camera status and the active application list in Quick Settings.
+      </description>
+    </key>
     <key name="show-panel-indicator" type="b">
       <default>true</default>
       <summary>Show the LensGuard panel icon</summary>

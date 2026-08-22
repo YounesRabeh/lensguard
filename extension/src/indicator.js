@@ -42,8 +42,6 @@ class LensGuardToggle extends QuickSettings.QuickMenuToggle {
     }
 
     render(state) {
-        // Keep the narrow tile easy to identify. The expanded menu carries the
-        // fuller status title and application count.
         this.title = 'LensGuard';
         this.subtitle = QUICK_SETTINGS_SUBTITLES[state.status] ??
             'Status unavailable';
@@ -135,11 +133,12 @@ class LensGuardIndicator extends QuickSettings.SystemIndicator {
         this.connect('notify::hover', () => this._syncTooltip());
     }
 
-    render(state) {
+    render(state, quickSettingsVisible = false) {
         this._statusIcon.icon_name = state.panelIconName;
         this._statusIcon.accessible_name = state.accessibleLabel;
         this._statusIcon.visible = state.panelIconVisible;
         this._tooltip.text = state.tooltip;
+        this._toggle.visible = quickSettingsVisible;
         this._toggle.render(state);
         this._syncTooltip();
     }

@@ -106,6 +106,10 @@ export async function run() {
                 return false;
             }
         }, 'extension did not add its indicator');
+        extension.stateObj._settings.set_boolean(
+            'show-quick-settings-tile', true);
+        await waitFor(() => indicator()._toggle.visible,
+            'Quick Settings tile did not become visible');
 
         await service.start(sessions);
         await waitFor(() => sessionLabels().length === 3,

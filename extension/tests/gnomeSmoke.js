@@ -78,6 +78,18 @@ export async function run() {
         settings.reset('show-observer-unavailable-warning');
         settings.reset('show-indicator-during-observer-failure');
         settings.reset('show-panel-indicator');
+        settings.reset('show-quick-settings-tile');
+        assert(!indicator()._toggle.visible,
+            'Quick Settings tile is visible by default');
+        settings.set_boolean('show-quick-settings-tile', true);
+        await waitFor(() => indicator()._toggle.visible,
+            'Quick Settings tile preference did not apply live');
+        settings.set_boolean('show-quick-settings-tile', false);
+        await waitFor(() => !indicator()._toggle.visible,
+            'Quick Settings tile did not hide live');
+        settings.set_boolean('show-quick-settings-tile', true);
+        await waitFor(() => indicator()._toggle.visible,
+            'Quick Settings tile did not reappear live');
         const preferencesItem = indicator()._toggle.menu
             ._getMenuItems()
             .find(item => item.name === 'lensguard-preferences');
@@ -244,6 +256,7 @@ export async function run() {
         settings?.reset('show-observer-unavailable-warning');
         settings?.reset('show-indicator-during-observer-failure');
         settings?.reset('show-panel-indicator');
+        settings?.reset('show-quick-settings-tile');
         service.stop();
     }
 }

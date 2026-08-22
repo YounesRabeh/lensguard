@@ -28,6 +28,8 @@ const observerFailure = createViewState({
 });
 
 const defaults = applyPreferencesToViewState(observerFailure);
+assert(!normalizePreferences().showQuickSettingsTile,
+    'Quick Settings tile defaults to hidden');
 assert(defaults.observerWarningVisible, 'warnings default to enabled');
 assert(defaults.panelIconVisible, 'failure indicator defaults to visible');
 assertEqual(defaults.panelIconName, 'dialog-warning-symbolic',
@@ -96,6 +98,7 @@ assert(applyPreferencesToViewState(active, {
 }) === active, 'observer preferences do not alter active camera state');
 
 const values = new Map([
+    [PreferenceKey.SHOW_QUICK_SETTINGS_TILE, true],
     [PreferenceKey.SHOW_PANEL_INDICATOR, false],
     [PreferenceKey.SHOW_OBSERVER_UNAVAILABLE_WARNING, false],
     [PreferenceKey.SHOW_INDICATOR_DURING_OBSERVER_FAILURE, true],
@@ -105,6 +108,8 @@ const loaded = readPreferences({
         return values.get(key);
     },
 });
+assertEqual(loaded.showQuickSettingsTile, true,
+    'Quick Settings tile preference is read from settings');
 assertEqual(loaded.showPanelIndicator, false,
     'panel indicator preference is read from settings');
 assertEqual(loaded.showObserverUnavailableWarning, false,

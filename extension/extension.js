@@ -33,8 +33,7 @@ export default class LensGuardExtension extends Extension {
             () => this.openPreferences());
         const quickSettings = Main.panel.statusArea.quickSettings;
         quickSettings.addExternalIndicator(this._indicator);
-        // External indicators are appended by default. Keep the app in the
-        // first (far-left in LTR layouts) status-cluster slot.
+        // first left most slot.
         quickSettings._indicators.set_child_at_index(this._indicator, 0);
 
         this._client = new DbusClient(
@@ -64,8 +63,9 @@ export default class LensGuardExtension extends Extension {
 
         const baseState = applyInstallationConflictToViewState(
             this._baseState, this._installationConflict);
-        this._indicator.render(applyPreferencesToViewState(
-            baseState,
-            readPreferences(this._settings)));
+        const preferences = readPreferences(this._settings);
+        this._indicator.render(
+            applyPreferencesToViewState(baseState, preferences),
+            preferences.showQuickSettingsTile);
     }
 }
