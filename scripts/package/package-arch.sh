@@ -2,7 +2,16 @@
 set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-output_dir=$repo_root/dist/packages/arch
+output_dir=${1:-$repo_root/dist/packages/arch}
+
+if (($# > 1)); then
+    printf 'Usage: scripts/package/package-arch.sh [OUTPUT_DIRECTORY]\n' >&2
+    exit 2
+fi
+
+if [[ $output_dir != /* ]]; then
+    output_dir=$PWD/$output_dir
+fi
 
 for command_name in makepkg mktemp sed sha256sum tar; do
     command -v "$command_name" >/dev/null || {

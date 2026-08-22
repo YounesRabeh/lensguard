@@ -32,7 +32,7 @@ if rg -n $'\tMISSING\t' "$report"; then
     exit 1
 fi
 
-allowed='^(Apache-2\.0|Apache-2\.0/MIT|Apache-2\.0 OR MIT|Apache-2\.0 WITH LLVM-exception|Apache-2\.0 WITH LLVM-exception OR Apache-2\.0 OR MIT|BSD-3-Clause|ISC|MIT|MIT/Apache-2\.0|MIT OR Apache-2\.0|\(MIT OR Apache-2\.0\) AND Unicode-3\.0|MIT OR Apache-2\.0 OR LGPL-2\.1-or-later|Unlicense OR MIT)$'
+allowed='^(Apache-2\.0|Apache-2\.0/MIT|Apache-2\.0 OR MIT|Apache-2\.0 WITH LLVM-exception|Apache-2\.0 WITH LLVM-exception OR Apache-2\.0 OR MIT|BSD-3-Clause|ISC|MIT|MIT/Apache-2\.0|MIT OR Apache-2\.0|\(MIT OR Apache-2\.0\) AND Unicode-3\.0|MIT OR Apache-2\.0 OR LGPL-2\.1-or-later|Unlicense OR MIT|Zlib)$'
 unexpected=$(cut -f3 "$report" | sort -u | rg -v "$allowed" || true)
 if [[ -n $unexpected ]]; then
     printf '%s\n%s\n' \

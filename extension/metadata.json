@@ -4,6 +4,6 @@
   "description": "Shows apps using your camera via V4L2. Requires lensguard-service.",
   "url": "https://github.com/YounesRabeh/lensguard",
   "shell-version": ["50"],
-  "version-name": "1.6.0",
+  "version-name": "1.7.0",
   "settings-schema": "org.gnome.shell.extensions.lensguard"
 }

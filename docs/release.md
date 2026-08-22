@@ -55,6 +55,45 @@ Install the development prerequisites from `docs/development.md`, including `rpm
 make release-candidate
 ```
 
+That target builds the core release artifacts and RPM packages for the current version. To build
+every local distribution package and both release output forms with one command, run:
+
+```bash
+make package-all
+```
+
+`package-all` performs the following work in a temporary staging directory before changing the
+published output directories:
+
+1. synchronizes the extension metadata with the workspace version, verifies that `Cargo.lock`
+   is current, and runs the dependency-license gate before expensive package builds;
+2. builds full and service-only DEB, RPM, and Arch packages;
+3. builds the extension ZIP, daemon artifact, source archive, dependency-license report, manifest,
+   and checksums;
+4. assembles and verifies a complete latest artifact set and versioned release candidate; and
+5. replaces the package-format directories only after every build and verification succeeds.
+
+The output policy is intentional:
+
+- `dist/packages/deb`, `dist/packages/rpm`, and `dist/packages/arch` are fresh snapshots, so old
+  packages do not remain mixed with the current version;
+- `dist/release-artifacts` is replaced with the latest complete verified set;
+- `dist/release/<current-version>` is replaced when rebuilding the same version; and
+- every other directory under `dist/release/` is preserved as release history.
+
+Package builders must run as the normal user. If an older artifact was created with `sudo`, repair
+the generated-directory ownership before running `package-all`:
+
+```bash
+sudo chown -R "$USER:$USER" dist/packages dist/release-artifacts
+```
+
+The combined command requires the local DEB and RPM packaging tools, including `dpkg-deb` and
+`rpmbuild`. When `makepkg` is installed, it builds Arch packages directly. Otherwise, it uses
+Podman or Docker with the same digest-pinned Arch Linux image as CI; that fallback needs network
+access to download the image and Arch build dependencies. Artifact validation accepts either
+`bsdtar` or GNU `tar` with `zstd` support.
+
 Artifacts are written under `dist/release/<version>/`:
 
 - `lensguard-<version>-*.rpm`: Fedora binary package;

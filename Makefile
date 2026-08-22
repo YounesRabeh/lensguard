@@ -1,4 +1,4 @@
-.PHONY: format format-check lint test check build sync-version license-audit package-rpm package-deb package-arch package-release release-artifacts release-check release-package-check release-candidate smoke-extension smoke-real-camera capture-extension-screenshots test-local-installation test-system-package install-local uninstall-local bootstrap clean
+.PHONY: format format-check lint test check build sync-version license-audit package-rpm package-deb package-arch package-all package-release release-artifacts release-check release-package-check release-candidate smoke-extension smoke-real-camera capture-extension-screenshots test-local-installation test-system-package install-local uninstall-local bootstrap clean
 
 format:
 	cargo fmt --all
@@ -34,6 +34,9 @@ package-deb:
 
 package-arch:
 	./scripts/package/package-arch.sh
+
+package-all:
+	./scripts/release/package-all.sh
 
 package-release:
 	./scripts/release/package-release.sh

@@ -17,12 +17,22 @@ fi
     exit 1
 }
 
-for command_name in bsdtar dpkg-deb rpm; do
+for command_name in dpkg-deb rpm; do
     command -v "$command_name" >/dev/null || {
         printf 'check-package-artifacts.sh: required command not found: %s\n' "$command_name" >&2
         exit 1
     }
 done
+
+if command -v bsdtar >/dev/null; then
+    archive_reader=bsdtar
+elif command -v tar >/dev/null && command -v zstd >/dev/null; then
+    archive_reader=tar
+else
+    printf '%s\n' \
+        'check-package-artifacts.sh: bsdtar or GNU tar with zstd support is required' >&2
+    exit 1
+fi
 
 mapfile -t deb_packages < <(find "$release_dir" -maxdepth 1 -type f -name "lensguard_${version}_*.deb")
 mapfile -t service_deb_packages < <(find "$release_dir" -maxdepth 1 -type f \
@@ -176,8 +186,8 @@ if grep -Fq '/usr/share/gnome-shell/extensions/' <<<"$service_rpm_contents"; the
     exit 1
 fi
 
-package_info=$(bsdtar -xOf "$arch" .PKGINFO)
-arch_contents=$(bsdtar -tf "$arch")
+package_info=$("$archive_reader" -xOf "$arch" .PKGINFO)
+arch_contents=$("$archive_reader" -tf "$arch")
 grep -Fxq 'pkgname = lensguard' <<<"$package_info"
 grep -Fxq "pkgver = $version-1" <<<"$package_info"
 grep -Fxq 'conflict = lensguard-service' <<<"$package_info"
@@ -189,8 +199,8 @@ grep -Fxq 'usr/lib/lensguard/lensguard-v4l2-observer' <<<"$arch_contents"
 grep -Fxq 'usr/share/gnome-shell/extensions/lensguard@younesrabeh.github.io/metadata.json' \
     <<<"$arch_contents"
 
-service_package_info=$(bsdtar -xOf "$service_arch" .PKGINFO)
-service_arch_contents=$(bsdtar -tf "$service_arch")
+service_package_info=$("$archive_reader" -xOf "$service_arch" .PKGINFO)
+service_arch_contents=$("$archive_reader" -tf "$service_arch")
 grep -Fxq 'pkgname = lensguard-service' <<<"$service_package_info"
 grep -Fxq "pkgver = $version-1" <<<"$service_package_info"
 grep -Fxq 'conflict = lensguard' <<<"$service_package_info"

@@ -2,7 +2,16 @@
 set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
-output_dir=$repo_root/dist/packages/deb
+output_dir=${1:-$repo_root/dist/packages/deb}
+
+if (($# > 1)); then
+    printf 'Usage: scripts/package/package-deb.sh [OUTPUT_DIRECTORY]\n' >&2
+    exit 2
+fi
+
+if [[ $output_dir != /* ]]; then
+    output_dir=$PWD/$output_dir
+fi
 
 for command_name in awk date dpkg-deb du git gzip install mktemp sed strip; do
     command -v "$command_name" >/dev/null || {
