@@ -17,6 +17,7 @@ Common entry points:
 ```bash
 make bootstrap
 make check
+make smoke
 make install-local
 make uninstall-local
 make package-deb
@@ -31,6 +32,10 @@ directory, and the current version's release candidate. It replaces `dist/packag
 and `dist/release-artifacts`, replaces only `dist/release/<current-version>`, and preserves all
 other versioned release directories. If `makepkg` is unavailable, the command builds the Arch
 packages in the digest-pinned Arch Linux CI image through Podman or Docker.
+
+`make smoke` builds the extension and checks the ZIP contents, metadata, JavaScript syntax, and
+GSettings schema without requiring a camera. On a GNOME session, `make smoke-extension` additionally
+runs the headless GNOME Shell UI smoke test; `make smoke-real-camera` exercises a live camera.
 
 Scripts may still be run directly when debugging. Run them from any directory; each script resolves
 the repository root from its own location.

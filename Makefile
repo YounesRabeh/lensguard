@@ -1,4 +1,4 @@
-.PHONY: format format-check lint test check build sync-version license-audit package-rpm package-deb package-arch package-all package-release release-artifacts release-check release-package-check release-candidate smoke-extension smoke-real-camera capture-extension-screenshots test-local-installation test-system-package install-local uninstall-local bootstrap clean
+.PHONY: format format-check lint test check build sync-version license-audit package-rpm package-deb package-arch package-all package-release release-artifacts release-check release-package-check release-candidate smoke smoke-extension smoke-real-camera capture-extension-screenshots test-local-installation test-system-package install-local uninstall-local bootstrap clean
 
 format:
 	cargo fmt --all
@@ -53,6 +53,10 @@ release-package-check:
 release-candidate:
 	./scripts/release/package-release.sh dist/release/$(shell ./scripts/util/project-version.sh) --require-rpm
 
+smoke: build
+	./scripts/test/smoke-extension-archive.sh dist/lensguard@younesrabeh.github.io.shell-extension.zip
+	@printf '%s\n' 'GNOME Shell smoke tests are available with: make smoke-extension'
+
 smoke-extension: build
 	./scripts/dev/smoke-extension.sh dist/lensguard@younesrabeh.github.io.shell-extension.zip
 
@@ -75,6 +79,7 @@ uninstall-local:
 	./scripts/install/uninstall-local.sh
 
 check: format-check lint test build test-system-package
+	./scripts/test/smoke-extension-archive.sh dist/lensguard@younesrabeh.github.io.shell-extension.zip
 
 bootstrap:
 	./scripts/dev/bootstrap-dev.sh

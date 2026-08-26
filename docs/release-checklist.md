@@ -14,6 +14,7 @@ Target packages: Ubuntu 26.04, Fedora 44, Arch Linux; GNOME Shell 50; x86_64
 
 - [ ] The tagged commit is reachable from `main` and its version is newer than the latest stable release.
 - [ ] Clean-source `make check` passes with the pinned Rust toolchain.
+- [ ] `make smoke` passes for the packaged extension archive.
 - [ ] Dependency license audit passes.
 - [ ] Extension ZIP contains runtime files only.
 - [ ] DEB, source-built RPM/SRPM, and Arch packages build in native distribution environments.
