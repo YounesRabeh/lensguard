@@ -7,7 +7,7 @@
     <img src="https://img.shields.io/badge/GNOME_Shell-50-4A86CF?style=for-the-badge&amp;logo=gnome&amp;logoColor=white" alt="GNOME Shell 50">
     <img src="https://img.shields.io/badge/License-GPL--3.0--or--later-3DA639?style=for-the-badge" alt="GPL-3.0-or-later license">
     <a href="https://github.com/YounesRabeh/lensguard/releases/latest"><img src="https://img.shields.io/badge/Download-Latest_Release-2EA44F?style=for-the-badge&amp;logo=github&amp;logoColor=white" alt="Download the latest release"></a>
-    <a href="docs/README.md"><img src="https://img.shields.io/badge/Open-Documentation_Hub-0969DA?style=for-the-badge&amp;logo=readthedocs&amp;logoColor=white" alt="Open the documentation hub"></a>
+    <a href="docs/README.md"><img src="https://img.shields.io/badge/Documentation%20Hub-0969DA?style=for-the-badge&amp;logo=mdbook&amp;logoColor=white" alt="Open the UPM209 ESP Extension documentation hub"></a>
   </p>
 
   <p>A GNOME Shell privacy indicator for applications using cameras directly through V4L2.</p>
