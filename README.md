@@ -1,28 +1,47 @@
-# LensGuard
+<a href="https://github.com/YounesRabeh/lensguard"><img src="docs/images/lensguard-banner.png" alt="LensGuard" width="100%"></a>
 
-LensGuard is a GNOME Shell privacy indicator for applications that access cameras directly through
-V4L2. It complements GNOME's PipeWire camera indicator without reporting the same session twice.
+<div align="center">
 
-![LensGuard showing direct camera activity](.github/assets/app-showcase.png)
+  <p align="center">
+    <img src="https://img.shields.io/badge/Platform-Linux-1793D1?style=for-the-badge&amp;logo=linux&amp;logoColor=white" alt="Platform: Linux">
+    <img src="https://img.shields.io/badge/GNOME_Shell-50-4A86CF?style=for-the-badge&amp;logo=gnome&amp;logoColor=white" alt="GNOME Shell 50">
+    <img src="https://img.shields.io/badge/License-GPL--3.0--or--later-3DA639?style=for-the-badge" alt="GPL-3.0-or-later license">
+    <a href="https://github.com/YounesRabeh/lensguard/releases/latest"><img src="https://img.shields.io/badge/Download-Latest_Release-2EA44F?style=for-the-badge&amp;logo=github&amp;logoColor=white" alt="Download the latest release"></a>
+    <a href="docs/README.md"><img src="https://img.shields.io/badge/Explore-Documentation-0969DA?style=for-the-badge&amp;logo=readthedocs&amp;logoColor=white" alt="Explore the documentation"></a>
+  </p>
 
-## What it does
+  <p>A GNOME Shell privacy indicator for applications using cameras directly through V4L2.</p>
 
-- Detects successful V4L2 streaming capture from apps such as browsers and Electron clients.
-- Shows the application and physical camera in GNOME Quick Settings.
-- Reports monitoring failures clearly instead of presenting an uncertain “camera idle” state.
-- Observes metadata only—never frames, video buffers, command lines, or persistent history.
+  <p align="center">
+    <a href="#features">Features</a> •
+    <a href="#screenshots">Screenshots</a> •
+    <a href="#quick-start">Quick Start</a> •
+    <a href="#documentation">Documentation</a> •
+    <a href="#tech-stack">Tech stack</a>
+  </p>
+</div>
 
-![LensGuard Quick Settings menu](.github/assets/menu-showcase.png)
+---
 
-Direct Discord capture:
+## Features
 
-![LensGuard identifying Discord camera use](.github/assets/discord-example.png)
+- 📷 Detects confirmed direct V4L2 streaming after a successful `VIDIOC_STREAMON`.
+- 🛡️ Shows the active application and physical camera in GNOME Quick Settings.
+- 🤝 Leaves trusted desktop-broker sessions to GNOME, preventing duplicate indicators.
+- ⚠️ Makes monitoring failures and unknown activity visible instead of claiming the camera is idle.
+- 🔒 Handles metadata only, never frames, video buffers, command lines, or persistent history.
 
-Monitoring failures remain visible:
+## Screenshots
 
-![LensGuard monitoring warning](.github/assets/dbus-error.png)
+| Active direct-camera session | Quick Settings details |
+| --- | --- |
+| ![LensGuard showing a direct camera session](.github/assets/app-showcase.png) | ![LensGuard Quick Settings menu](.github/assets/menu-showcase.png) |
 
-## Install
+| Application identification | Monitoring availability warning |
+| --- | --- |
+| ![LensGuard identifying Discord camera use](.github/assets/discord-example.png) | ![LensGuard monitoring warning](.github/assets/dbus-error.png) |
+
+## Quick start
 
 On Fedora, install the complete package from COPR:
 
@@ -31,39 +50,66 @@ sudo dnf copr enable younesrabeh/lensguard
 sudo dnf install lensguard
 ```
 
-The package enables the privileged metadata observer automatically and installs the GNOME
-extension system-wide. Log out and back in once, then enable LensGuard:
+Log out and back in once, then enable the extension:
 
 ```bash
 gnome-extensions enable lensguard@younesrabeh.github.io
 ```
 
-Alternatively, install the extension from extensions.gnome.org and pair it with the service-only
-`lensguard-service` package. Do not install both native packages together.
-
-See the [installation guide](docs/installation.md) for Fedora, Debian/Ubuntu, Arch Linux, local
-packages, upgrades, and removal.
-
-## Detection boundary
-
-LensGuard reports direct V4L2 streaming only after a successful `VIDIOC_STREAMON`. Camera access
-through a trusted desktop broker remains GNOME's responsibility. V4L2 read-I/O is not detected in
-this release.
+LensGuard can also be installed from extensions.gnome.org with the separate `lensguard-service`
+package. See the [installation guide](docs/installation.md) for Fedora, Debian/Ubuntu, Arch,
+local packages, upgrades, removal, and the difference between the two package routes.
 
 ## Documentation
 
-- [Getting started](docs/getting-started.md)
-- [Installation](docs/installation.md)
-- [Architecture and privacy boundary](docs/architecture.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [D-Bus API](docs/dbus-api.md)
-- [Development](docs/development.md)
-- [Release process](docs/release.md)
+The [documentation hub](docs/README.md) organizes guides by task:
+
+| I want to… | Start here |
+| --- | --- |
+| Start using LensGuard | [Getting started](docs/getting-started.md) · [Installation](docs/installation.md) |
+| Understand its privacy model | [Architecture and privacy boundary](docs/architecture.md) · [D-Bus API](docs/dbus-api.md) |
+| Diagnose an issue | [Troubleshooting](docs/troubleshooting.md) |
+| Develop, test, or release it | [Development](docs/development.md) · [Release packaging](docs/release.md) · [Release checklist](docs/release-checklist.md) |
+
 
 ## Development
 
+Requires Rust 1.85+, Clang with the BPF target, GNU Make, GNOME development tools, pnpm,
+ripgrep, shellcheck, and unzip. Bootstrap a development environment, then run the full check:
+
 ```bash
+./scripts/dev/bootstrap-dev.sh
 make check
 ```
 
-LensGuard is licensed under [GPL-3.0-or-later](LICENSE).
+| Need | Command |
+| --- | --- |
+| Format code | `make format` |
+| Run tests | `make test` |
+| Build the workspace and extension | `make build` |
+| Run all checks | `make check` |
+| Build release packages | `make package-all` |
+
+See the [development guide](docs/development.md) for the full setup and observer testing workflow.
+
+
+## Tech stack
+
+<p align="left">
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2024-000000?style=for-the-badge&amp;logo=rust&amp;logoColor=white" alt="Rust 2024"></a>
+  <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"><img src="https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?style=for-the-badge&amp;logo=javascript&amp;logoColor=black" alt="JavaScript"></a>
+  <a href="https://gjs.guide/"><img src="https://img.shields.io/badge/GJS-GNOME_JavaScript-4A86CF?style=for-the-badge&amp;logo=gnome&amp;logoColor=white" alt="GJS GNOME JavaScript"></a>
+  <a href="https://www.gnome.org/"><img src="https://img.shields.io/badge/GNOME_Shell-50-4A86CF?style=for-the-badge&amp;logo=gnome&amp;logoColor=white" alt="GNOME Shell 50"></a>
+  <a href="https://ebpf.io/"><img src="https://img.shields.io/badge/eBPF-Tracepoints-F15A24?style=for-the-badge&amp;logo=linux&amp;logoColor=white" alt="eBPF tracepoints"></a>
+  <a href="https://www.freedesktop.org/wiki/Software/dbus/"><img src="https://img.shields.io/badge/D--Bus-Session_IPC-8B5CF6?style=for-the-badge" alt="D-Bus session IPC"></a>
+  <a href="https://systemd.io/"><img src="https://img.shields.io/badge/systemd-Services-5B7C99?style=for-the-badge&amp;logo=systemd&amp;logoColor=white" alt="systemd services"></a>
+  <a href="https://www.gnu.org/software/make/"><img src="https://img.shields.io/badge/GNU_Make-Build-427819?style=for-the-badge&amp;logo=gnu&amp;logoColor=white" alt="GNU Make"></a>
+  <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-11-F69220?style=for-the-badge&amp;logo=pnpm&amp;logoColor=white" alt="pnpm 11"></a>
+</p>
+
+
+---
+
+## License
+
+Distributed under the [GPL-3.0-or-later](LICENSE) license.

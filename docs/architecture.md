@@ -1,5 +1,7 @@
 # Architecture
 
+[< Back to LensGuard](../README.md)
+
 ```text
 GNOME Shell extension
         │ user-session D-Bus

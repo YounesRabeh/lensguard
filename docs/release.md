@@ -1,5 +1,7 @@
 # Release packaging
 
+[< Back to LensGuard](../README.md)
+
 LensGuard supports two release installation paths:
 
 - the binary-free GNOME extension ZIP plus a service-only `lensguard-service` package; or

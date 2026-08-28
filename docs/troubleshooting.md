@@ -1,5 +1,7 @@
 # Troubleshooting
 
+[< Back to LensGuard](../README.md)
+
 ## Service unavailable
 
 Confirm the native package and both units exist:

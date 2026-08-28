@@ -1,5 +1,7 @@
 # Development
 
+[< Back to LensGuard](../README.md)
+
 Install Rust 1.85 or newer, Clang with the BPF target, GNU Make, D-Bus tools, GJS, GNOME Shell,
 `glib-compile-schemas`, pnpm, ripgrep, shellcheck, and unzip.
 

@@ -1,5 +1,7 @@
 # Getting started
 
+[< Back to LensGuard](../README.md)
+
 Install the native `lensguard-service` package, which enables and starts
 `lensguard-v4l2-observer.service`, then install one copy of the GNOME extension. Open Quick Settings
 to verify “No camera in use” and no warning icon.

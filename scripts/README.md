@@ -1,5 +1,7 @@
 # Scripts
 
+[< Back to LensGuard](../README.md)
+
 Use the repository `Makefile` for common tasks. The scripts below are grouped by responsibility so
 internal helpers are easy to distinguish from commands intended for developers.
 

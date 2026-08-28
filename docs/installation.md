@@ -1,5 +1,7 @@
 # Installation
 
+[< Back to LensGuard](../README.md)
+
 LensGuard needs a native service because verified V4L2 operation results require a small
 privileged eBPF observer. The GNOME extension cannot install or start privileged code; the native
 package enables and starts the observer during installation.

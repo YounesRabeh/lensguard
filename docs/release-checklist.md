@@ -1,5 +1,7 @@
 # Release checklist
 
+[< Back to LensGuard](../README.md)
+
 Release version: `<workspace version>`  
 Target packages: Ubuntu 26.04, Fedora 44, Arch Linux; GNOME Shell 50; x86_64
 
