@@ -6,6 +6,6 @@
     "lint:js": "eslint extension eslint.config.js"
   },
   "devDependencies": {
-    "eslint": "^9.39.2"
+    "eslint": "^10.11.0"
   }
 }

@@ -103,7 +103,6 @@ Choose a guide by task, or browse the complete [documentation hub](docs/README.m
   <a href="https://www.freedesktop.org/wiki/Software/dbus/"><img src="https://img.shields.io/badge/D--Bus-Session_IPC-8B5CF6?style=for-the-badge" alt="D-Bus session IPC"></a>
   <a href="https://systemd.io/"><img src="https://img.shields.io/badge/systemd-Services-5B7C99?style=for-the-badge&amp;logo=systemd&amp;logoColor=white" alt="systemd services"></a>
   <a href="https://www.gnu.org/software/make/"><img src="https://img.shields.io/badge/GNU_Make-Build-427819?style=for-the-badge&amp;logo=gnu&amp;logoColor=white" alt="GNU Make"></a>
-  <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-11-F69220?style=for-the-badge&amp;logo=pnpm&amp;logoColor=white" alt="pnpm 11"></a>
 </p>
 
 ---
